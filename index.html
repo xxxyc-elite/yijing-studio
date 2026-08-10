@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>易卦研习 · 从《易经》到术数应用</title>
+  <meta name="description" content="《易经》学习与应用工具：六十四卦精读、万物类象、六爻纳甲排盘、梅花易数起卦、奇门遁甲排盘。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#/" data-route="#/">
+        <span class="brand-seal">易</span>
+        <span class="brand-text">易卦研习</span>
+      </a>
+      <button class="nav-toggle" aria-label="打开菜单">☰</button>
+      <nav class="site-nav">
+        <a class="nav-link" href="#/" data-route="#/">首页</a>
+        <a class="nav-link" href="#/atlas" data-route="#/atlas">六十四卦</a>
+        <a class="nav-link" href="#/scan" data-route="#/scan">万物归卦</a>
+        <div class="nav-group">
+          <span class="nav-label">术数应用</span>
+          <div class="nav-dropdown">
+            <a href="#/liuyao" data-route="#/liuyao">六爻纳甲</a>
+            <a href="#/meihua" data-route="#/meihua">梅花易数</a>
+            <a href="#/qimen" data-route="#/qimen">奇门遁甲</a>
+          </div>
+        </div>
+        <a class="nav-link" href="#/learn" data-route="#/learn">闯关学习</a>
+        <a class="nav-link" href="#/library" data-route="#/library">书库</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="app">
+    <div class="page" style="text-align:center;padding-top:48px">
+      <p>页面加载中…</p>
+      <p class="subtitle">若长时间空白，请通过本地服务器打开：<br><code style="background:var(--paper);padding:4px 8px;border-radius:4px">http://127.0.0.1:8081/</code></p>
+      <p class="subtitle">直接双击 <code>index.html</code> 会因浏览器安全策略导致应用无法运行。</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p class="footer-refs">参考书籍：《周易》本经 / 张延生《易学入门》/ 野鹤老人《增删卜易》/ 《卜筮正宗》/ 贾双萍《梅花易数预测学》/ 《奇门遁甲入门讲义》</p>
+    </div>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
