@@ -717,8 +717,7 @@ function liuyaoHTML() {
         <button class="btn btn-secondary" style="color:var(--ink);border-color:var(--line-dark);margin-bottom:14px" id="lyNow">用现在</button>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-primary" id="lyCast">🪙 自动摇卦</button>
-        <button class="btn btn-jade" id="lyManual">手动指定动爻</button>
+        <button class="btn btn-primary" id="lyCast">🪙 起卦（按所问之事与时间）</button>
       </div>
     </div>`;
   if (st.result) {
@@ -752,15 +751,10 @@ function liuyaoBind() {
   app.querySelector('#lyCast')?.addEventListener('click', () => {
     const q = app.querySelector('#lyQuestion').value;
     const when = parseDT(app.querySelector('#lyTime').value) || nowDT();
-    const tosses = tossSix();
+    // 以「所问之事@时间」为种子：同一问题同一时间可复现（科学严谨、可重复验证）；
+    // 改问题或改时间即另得一局。每次点击若输入未变，结果恒定。
+    const tosses = tossSix(q + '@' + fmtDTLocal(when));
     S.liuyao = { question: q, when, result: liuPaipan(tosses, when, q) };
-    render();
-  });
-  app.querySelector('#lyManual')?.addEventListener('click', () => {
-    const q = app.querySelector('#lyQuestion').value;
-    const when = parseDT(app.querySelector('#lyTime').value) || nowDT();
-    const lines = [1,0,1,0,1,1];
-    S.liuyao = { question: q, when, result: liuPaipan(lines.map((v,i)=> ({ sum: v ? (i===2?9:7) : (i===2?6:8) })), when, q) };
     render();
   });
 }
@@ -827,7 +821,7 @@ function meihuaBind() {
       r = mhByNumbers(nums.length ? nums : [1]);
     } else if (st.method === 'chars') {
       const ch = app.querySelector('#mhChars').value;
-      r = mhByChars(ch, nowDT());
+      r = mhByChars(ch, S.meihua.when || nowDT());
     } else {
       r = mhByRandom();
     }

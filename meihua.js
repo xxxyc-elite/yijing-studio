@@ -82,26 +82,28 @@ export function byNumbers(nums) {
   });
 }
 
-/** 三、报字起卦：一字以笔画/字数分，两字前后分 */
+// 各字 Unicode 码点之和（数字环境无法取真笔画，码点求和稳定且可复现，作为「画数」近似）
+function sumCodes(s) { let t = 0; for (const ch of s) t += ch.codePointAt(0); return t; }
+
+/** 三、报字起卦：一字以码点为数，多字前后分（取各字码点之和） */
 export function byChars(str, date) {
   const s = (str || '').replace(/\s/g, '');
   if (!s) return null;
   const p = date ? fourPillars(date.y, date.m, date.d, date.h, date.mi || 0) : null;
   const hz = date ? hourZhiIndex(date.h) + 1 : 0;
   if (s.length === 1) {
-    // 单字：以 Unicode 笔画近似不可得，改用「字数 + 时」的通行变体
-    const code = s.charCodeAt(0) % 100;
+    const code = s.codePointAt(0);
     return make(code, code + hz, code + hz, {
       method: '一字起卦',
-      detail: '单字取其数为上卦，加时数 ' + hz + ' 为下卦。'
+      detail: '单字取其码点为上卦，加时数 ' + hz + ' 为下卦。'
     });
   }
   const half = Math.ceil(s.length / 2);
-  const up = s.slice(0, half).length;
-  const lo = s.slice(half).length;
+  const upStr = s.slice(0, half), loStr = s.slice(half);
+  const up = sumCodes(upStr), lo = sumCodes(loStr);
   return make(up, lo, up + lo + hz, {
     method: '字数起卦',
-    detail: '「' + s + '」共 ' + s.length + ' 字，前 ' + up + ' 字为上卦，后 ' + lo + ' 字为下卦，字数之和加时数 ' + hz + ' ÷6 取余为动爻。',
+    detail: '「' + s + '」前 ' + upStr.length + ' 字码点之和 ' + up + ' 为上卦，后 ' + loStr.length + ' 字码点之和 ' + lo + ' 为下卦，两数之和加时数 ' + hz + ' ÷6 取余为动爻。',
     pillars: p
   });
 }

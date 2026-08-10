@@ -182,14 +182,39 @@ function findFu(ben, dayGan) {
 
 /* ============ 摇卦 ============ */
 // 三枚铜钱：字(有字面)记2，背记3；三枚之和 6老阴 7少阳 8少阴 9老阳
-export function tossOnce() {
-  const c = [0, 0, 0].map(() => (Math.random() < 0.5 ? 2 : 3));
+export function tossOnce(rng) {
+  rng = rng || Math.random;
+  const c = [0, 0, 0].map(() => (rng() < 0.5 ? 2 : 3));
   const sum = c[0] + c[1] + c[2];
   return { coins: c, sum, yang: sum === 7 || sum === 9, moving: sum === 6 || sum === 9 };
 }
-export function tossSix() {
+// 基于字符串种子的可复现伪随机（xmur3 + mulberry32）。同种子必得同序列。
+function xmur3(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return function () {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    h ^= h >>> 16;
+    return h >>> 0;
+  };
+}
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+// 摇六次。传 seed（建议「所问之事@时间」）则结果可复现；不传则随机（兼容旧调用）。
+export function tossSix(seed) {
+  const rng = seed ? mulberry32(xmur3(seed)()) : Math.random;
   const arr = [];
-  for (let i = 0; i < 6; i++) arr.push(tossOnce());
+  for (let i = 0; i < 6; i++) arr.push(tossOnce(rng));
   return arr;
 }
 
