@@ -62,33 +62,36 @@ export const SPIRIT = [
 ];
 
 /* ============ 定局 ============ */
-// 节气→阳遁/阴遁 上中下元局数
+// 节气→阳遁/阴遁 上中下元局数（时家奇门拆补法定局表，依京房/传统阳遁阴遁局数）
+// 规律：阳遁 上元=k，中元=k+6(洛书进三位)、下元=k+3；阴遁 上元=k，中元=k+3、下元=k+6。
 export const JU_TABLE = {
-  冬至: { dun: '阳', 上元: 7, 中元: 1, 下元: 4 },
-  惊蛰: { dun: '阳', 上元: 7, 中元: 1, 下元: 4 },
-  小寒: { dun: '阳', 上元: 2, 中元: 5, 下元: 8 },
-  大寒: { dun: '阳', 上元: 3, 中元: 6, 下元: 9 },
-  春分: { dun: '阳', 上元: 3, 中元: 6, 下元: 9 },
-  立春: { dun: '阳', 上元: 8, 中元: 5, 下元: 2 },
-  雨水: { dun: '阳', 上元: 9, 中元: 6, 下元: 3 },
-  清明: { dun: '阳', 上元: 9, 中元: 6, 下元: 3 },
-  谷雨: { dun: '阳', 上元: 5, 中元: 2, 下元: 8 },
-  小满: { dun: '阳', 上元: 5, 中元: 2, 下元: 8 },
-  立夏: { dun: '阳', 上元: 4, 中元: 1, 下元: 7 },
-  芒种: { dun: '阳', 上元: 6, 中元: 3, 下元: 9 },
+  // —— 阳遁（冬至→芒种，共十二节气）——
+  冬至: { dun: '阳', 上元: 1, 中元: 7, 下元: 4 },   // 阳一局 一七四
+  小寒: { dun: '阳', 上元: 2, 中元: 8, 下元: 5 },   // 阳二局 二八五
+  大寒: { dun: '阳', 上元: 3, 中元: 9, 下元: 6 },   // 阳三局 三九六
+  立春: { dun: '阳', 上元: 8, 中元: 5, 下元: 2 },   // 阳八局 八五二
+  雨水: { dun: '阳', 上元: 9, 中元: 6, 下元: 3 },   // 阳九局 九六三
+  惊蛰: { dun: '阳', 上元: 1, 中元: 7, 下元: 4 },   // 阳一局 一七四
+  春分: { dun: '阳', 上元: 3, 中元: 9, 下元: 6 },   // 阳三局 三九六
+  清明: { dun: '阳', 上元: 4, 中元: 1, 下元: 7 },   // 阳四局 四一七
+  谷雨: { dun: '阳', 上元: 5, 中元: 2, 下元: 8 },   // 阳五局 五二八
+  立夏: { dun: '阳', 上元: 4, 中元: 1, 下元: 7 },   // 阳四局 四一七
+  小满: { dun: '阳', 上元: 5, 中元: 2, 下元: 8 },   // 阳五局 五二八
+  芒种: { dun: '阳', 上元: 6, 中元: 3, 下元: 9 },   // 阳六局 六三九
 
-  夏至: { dun: '阴', 上元: 9, 中元: 6, 下元: 3 },
-  白露: { dun: '阴', 上元: 9, 中元: 6, 下元: 3 },
-  小暑: { dun: '阴', 上元: 8, 中元: 5, 下元: 2 },
-  大暑: { dun: '阴', 上元: 7, 中元: 1, 下元: 4 },
-  秋分: { dun: '阴', 上元: 7, 中元: 1, 下元: 4 },
-  立秋: { dun: '阴', 上元: 2, 中元: 5, 下元: 8 },
-  处暑: { dun: '阴', 上元: 3, 中元: 6, 下元: 9 },
-  寒露: { dun: '阴', 上元: 3, 中元: 6, 下元: 9 },
-  霜降: { dun: '阴', 上元: 5, 中元: 2, 下元: 8 },
-  小雪: { dun: '阴', 上元: 5, 中元: 2, 下元: 8 },
-  立冬: { dun: '阴', 上元: 6, 中元: 3, 下元: 9 },
-  大雪: { dun: '阴', 上元: 4, 中元: 1, 下元: 7 }
+  // —— 阴遁（夏至→大雪，共十二节气）——
+  夏至: { dun: '阴', 上元: 9, 中元: 3, 下元: 6 },   // 阴九局 九三六
+  小暑: { dun: '阴', 上元: 8, 中元: 2, 下元: 5 },   // 阴八局 八二五
+  大暑: { dun: '阴', 上元: 7, 中元: 1, 下元: 4 },   // 阴七局 七一四
+  立秋: { dun: '阴', 上元: 2, 中元: 5, 下元: 8 },   // 阴二局 二五八
+  处暑: { dun: '阴', 上元: 1, 中元: 4, 下元: 7 },   // 阴一局 一四七
+  白露: { dun: '阴', 上元: 9, 中元: 3, 下元: 6 },   // 阴九局 九三六
+  秋分: { dun: '阴', 上元: 7, 中元: 1, 下元: 4 },   // 阴七局 七一四
+  寒露: { dun: '阴', 上元: 6, 中元: 9, 下元: 3 },   // 阴六局 六九三
+  霜降: { dun: '阴', 上元: 5, 中元: 8, 下元: 2 },   // 阴五局 五八二
+  立冬: { dun: '阴', 上元: 6, 中元: 9, 下元: 3 },   // 阴六局 六九三
+  小雪: { dun: '阴', 上元: 5, 中元: 8, 下元: 2 },   // 阴五局 五八二
+  大雪: { dun: '阴', 上元: 4, 中元: 7, 下元: 1 }    // 阴四局 四七一
 };
 
 // 日干支求三元（拆补法：以日干支所在旬的符头定元）
@@ -131,7 +134,9 @@ export function paipan(when, question) {
   const zhiFuYi = XUN_TO_YI[hourXun.head];              // 旬首所遁之仪
   const zhiFuRawPos = posOfStem(dipan, zhiFuYi);        // 值符原始宫位（可能为中五）
   const zhiFuPos = attachCenter(zhiFuRawPos);           // 中五寄坤二
-  const zhiFuStarName = STAR_AT_POS[zhiFuPos];          // 值符星（中五则天禽，这里同坤二天芮处理）
+  const zhiFuStarName = STAR_AT_POS[zhiFuPos];          // 值符星（中五则寄坤二，以天芮代飞布）
+  // 旬首遁中五时，值符之星实为天禽（天禽寄坤二、与天芮同宫），此处单独标注以合书规
+  const zhiFuStarDisplay = zhiFuRawPos === 5 ? '天禽' : zhiFuStarName;
 
   // 时干所在宫 = 值符星落宫（中五寄二）
   const hourStemRawPos = posOfStem(dipan, p.hour.gan);
@@ -145,6 +150,8 @@ export function paipan(when, question) {
     const sName = STAR_ORDER[(idx0 + i) % 8];
     starAt[ringFrom[i]] = { ...STAR[POS_OF_STAR[sName]], name: sName };
   }
+  // 天禽寄中五宫（与坤二同宫论），无论值符是否在此，中五恒为天禽
+  starAt[5] = { ...STAR[5], name: '天禽' };
 
   // 天盘：九星把各自原始宫位的地盘干带到新宫位
   const tianPan = {};
@@ -188,11 +195,11 @@ export function paipan(when, question) {
     yuan, dun, ju,
     dipan,
     starAt, tianPan, doorAt, spiritAt,
-    zhiFu: { yi: zhiFuYi, pos: zhiFuPos, star: zhiFuStarName, starAt: hourStemPos },
+    zhiFu: { yi: zhiFuYi, pos: zhiFuPos, star: zhiFuStarDisplay, starAt: hourStemPos },
     zhiShi: { door: zhiShiDoorName, pos: zhiShiPos },
     kong: p.xunkong,
     maXing,
-    tip: guide(dun, ju, p, zhiFuStarName, zhiShiDoorName)
+    tip: guide(dun, ju, p, zhiFuStarDisplay, zhiShiDoorName, zhiFuRawPos)
   };
 }
 
@@ -225,10 +232,10 @@ function maXingZhi(dayZhi) {
   return map[dayZhi];
 }
 
-function guide(dun, ju, p, zhiFuStar, zhiShiDoor) {
+function guide(dun, ju, p, zhiFuStar, zhiShiDoor, zhiFuRawPos) {
   const arr = [];
   arr.push('当前节气：' + p.jie.name + '，' + dun + '遁 ' + ju + ' 局。阳遁顺布，阴遁逆布。');
-  arr.push('值符星为「' + zhiFuStar + '」，随旬首所遁之仪与时干而转。');
+  arr.push('值符星为「' + zhiFuStar + '」，随旬首所遁之仪与时干而转。' + (zhiFuRawPos === 5 ? '（旬首遁中五，天禽寄坤二，与天芮同宫）' : ''));
   arr.push('值使门为「' + zhiShiDoor + '」，按本旬时支步数飞布。');
   arr.push('九星为天盘，八门为人盘，八神为神盘；四盘合一，方可观事。');
   arr.push('占断先取用神宫：求财看生门、求官看开门、问病看天芮与死门、出行看休门、婚姻看六合与休门。');

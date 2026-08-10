@@ -320,7 +320,32 @@ function wxRel(fromWx, toWx) {
   return { k: '', say: '' };
 }
 
-// 依据问题解读本卦（白话）
+// 进神退神：动爻化出之爻与本爻同五行，地支顺行者为进神，逆行者退神
+const ZHI_ORDER = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+function jinTui(fromZhi, toZhi) {
+  const a = ZHI_ORDER.indexOf(fromZhi), b = ZHI_ORDER.indexOf(toZhi);
+  if (a < 0 || b < 0 || ZHI_WX[a] !== ZHI_WX[b]) return '';
+  const fwd = (b - a + 12) % 12, back = (a - b + 12) % 12;
+  if (fwd > 0 && fwd < back) return '进神';
+  if (back > 0 && back < fwd) return '退神';
+  return '';
+}
+// 五行生克逆映射：SHENG_INV[x]=能生x者（原神），KE_INV[x]=能克x者（忌神）
+const SHENG_INV = { 金: '土', 木: '水', 水: '金', 火: '木', 土: '火' };
+const KE_INV = { 金: '火', 木: '金', 水: '土', 火: '水', 土: '木' };
+
+// 用神取法（书中次序）：世爻持用 > 动爻用神 > 临日月用神 > 静爻用神 > 伏神
+function pickYongYao(ben, qin) {
+  const cands = ben.yaos.filter(y => y.qin === qin);
+  if (!cands.length) return null;
+  let y = cands.find(c => c.shi);                       // 1) 持世
+  if (!y) y = cands.find(c => c.moving);               // 2) 发动
+  if (!y) y = cands.find(c => c.byMonth === '比助' || c.byDay === '比助'); // 3) 临日月
+  if (!y) y = cands.find(c => c.wang === '旺' || c.wang === '相') || cands[0]; // 4) 旺相/静爻
+  return y;
+}
+
+// 依据问题解读本卦（白话，按六爻书规：取用→原神忌神→旺衰旬空月破→世用生克→进神退神→综合）
 export function interpret(question, res) {
   const ys = pickYongShen(question);
   const lines = [];
@@ -329,39 +354,91 @@ export function interpret(question, res) {
     return { yong: null, lines };
   }
   const ben = res.ben;
-  const yong = ben.yaos.find(y => y.qin === ys.qin && !y.kong && !y.poMonth)
-    || ben.yaos.find(y => y.qin === ys.qin);
+  let yong = pickYongYao(ben, ys.qin);
   const shi = ben.yaos[ben.shi - 1];
-  lines.push('你问的是「' + question + '」，取【' + ys.label + '】为用神（所占之事的核心）。');
+  const dayGz = res.when.day.gz, monthGz = res.when.month.gz;
+  lines.push('你问的是「' + question + '」，取【' + ys.label + '】为用神（所占之事的核心），以世爻（第' + ben.shi + '爻）为"我/求测人"。');
+
+  // 用神伏藏
   if (!yong) {
-    lines.push('用神未在本卦出现，须查伏神（本宫首卦同爻位之爻伏于其下）论之。当前盘用神伏藏，事机未显，宜静观其变。');
-  } else {
-    const posTxt = yong.pos + '爻' + (yong.shi ? '（世爻）' : yong.ying ? '（应爻）' : '');
-    lines.push('用神在' + posTxt + '，五行属' + yong.wx + '；' + (yong.wang || '平') + '（按月令论旺衰，旺相则有气、休囚死则无力）。');
-    if (yong.moving) lines.push('用神发动（为动爻），其事变化快、征兆明显，须重点看它变出之爻。');
-    if (yong.kong) lines.push('用神落旬空，暂时不起作用，须待出空之日方能应事，不可急于求成。');
-    if (yong.poMonth) lines.push('用神逢月破，气散无力，所谋多难成，宜缓图或另谋。');
-    const r = wxRel(shi.wx, yong.wx);
-    lines.push('世爻（代表你）属' + shi.wx + '，与用神关系为【' + r.k + '】——' + r.say + '。');
-    const yuan = SHENG[yong.wx];   // 生用神者
-    const ji = KE[yong.wx];        // 克用神者
-    const yuanYao = ben.yaos.find(y => y.wx === yuan && !y.kong);
-    const jiYao = ben.yaos.find(y => y.wx === ji && !y.kong);
-    if (yuanYao && yuanYao.moving) lines.push('原神（生用神的' + yuan + '）在' + yuanYao.pos + '爻发动，来生助用神，吉上加吉。');
-    if (jiYao && jiYao.moving) lines.push('忌神（克用神的' + ji + '）在' + jiYao.pos + '爻发动，来克害用神，须防阻碍。');
+    // 查伏神
+    let fuYao = null;
+    for (const y of ben.yaos) if (y.fu && y.fu.qin === ys.qin) { fuYao = y; break; }
+    if (fuYao) {
+      lines.push('用神【' + ys.qin + '】不上本卦，伏于' + fuYao.pos + '爻之下（伏神：' + fuYao.fu.zhi + fuYao.fu.wx + '）。伏神待"冲合"或' +
+        '值日方显，所问之事目前潜藏未发，须待时机或外力引动。');
+      yong = { qin: ys.qin, wx: fuYao.fu.wx, zhi: fuYao.fu.zhi, pos: fuYao.pos, fu: fuYao.fu, wang: '平', kong: false, poMonth: false, moving: false, byMonth: '', byDay: '' };
+    } else {
+      lines.push('用神【' + ys.qin + '】不上卦亦无伏神，事体不显，或所问非此，宜换个角度再占。');
+      lines.push('【白话总断】用神不现，事机未明，不宜妄动，静观其变为上。');
+      return { yong: ys, lines };
+    }
   }
-  lines.push('日辰' + res.when.day.gz + '、月建' + res.when.month.gz + '为断卦提纲：日辰能冲合生克、月建司令一月之权，二者对用神有利则事成。');
-  let concl = '';
-  if (yong) {
-    const rel = wxRel(shi.wx, yong.wx).k;
-    const good = (yong.wang === '旺' || yong.wang === '相') && !yong.kong && !yong.poMonth && (rel === '生我' || rel === '比和' || rel === '我克');
-    const bad = yong.kong || yong.poMonth || rel === '克我';
-    if (bad) concl = '综合看，用神受制或落空破，此事阻力较大，宜守不宜进，或待时机（出空、过月）再图。';
-    else if (good) concl = '综合看，用神得令、与世爻相生或相比，此事可成，宜积极把握。';
-    else concl = '综合看，用神中和、需你主动用力，事情可成但非唾手可得，稳步推进即可。';
-  } else {
-    concl = '用神伏藏，事机未显，宜静观其变、补足相关条件后再问。';
+
+  const posTxt = yong.pos + '爻' + (yong.shi ? '（世爻）' : yong.ying ? '（应爻）' : '') + (yong.fu ? '（伏神）' : '');
+  lines.push('用神在' + posTxt + '，五行属' + yong.wx + '，' + (yong.wang || '平') + '（按月令论旺衰：旺相有气、休囚死无力）。');
+  if (yong.moving) {
+    lines.push('用神发动（为动爻），其事变化快、征兆明显，须重点看它变出之爻。');
+    if (yong.bian) {
+      const jt = jinTui(yong.zhi, yong.bian.zhi);
+      if (jt) lines.push('用神化【' + jt + '】（化出' + yong.bian.zhi + yong.bian.wx + '）：进神主事渐向前成、退神主事退缩消退。');
+      else lines.push('用神化出' + yong.bian.zhi + yong.bian.wx + '（异五行），为回头生/克/泄/耗，须看所化之爻对用神利弊。');
+    }
   }
+  if (yong.kong) lines.push('用神落旬空（' + res.kong.join('、') + '），暂时不起作用，须待出空（冲空、填实之日）方能应事。');
+  if (yong.poMonth) lines.push('用神逢月破（冲月建之支），气散无力，所谋多难成，宜缓图或另谋。');
+  if (yong.fu) lines.push('用神为伏神，须待引拔（冲、合、值日）方显其力。');
+
+  // 世用生克
+  const r = wxRel(shi.wx, yong.wx);
+  lines.push('世爻属' + shi.wx + '，与用神关系为【' + (r.k || '不类') + '】——' + (r.say || '') + '。');
+
+  // 原神 / 忌神
+  const yuanWx = SHENG_INV[yong.wx];   // 生用神者（原神）
+  const jiWx = KE_INV[yong.wx];        // 克用神者（忌神）
+  const yuanYaos = ben.yaos.filter(y => y.wx === yuanWx && y.qin !== ys.qin);
+  const jiYaos = ben.yaos.filter(y => y.wx === jiWx && y.qin !== ys.qin);
+  const yuanDong = yuanYaos.find(y => y.moving);
+  const jiDong = jiYaos.find(y => y.moving);
+  if (yuanYaos.length) {
+    const w = yuanYaos.map(y => y.wang).join('、');
+    lines.push('原神（生用神的' + yuanWx + '）在' + yuanYaos.map(y => y.pos + '爻').join('、') + '，' + (w || '平') +
+      (yuanDong ? '，且原神发动来生助用神，吉上加吉' : '。原神有力则用神有源。'));
+  }
+  if (jiYaos.length) {
+    const w = jiYaos.map(y => y.wang).join('、');
+    lines.push('忌神（克用神的' + jiWx + '）在' + jiYaos.map(y => y.pos + '爻').join('、') + '，' + (w || '平') +
+      (jiDong ? '，且忌神发动来克害用神，须防阻碍、宜化解' : '。忌神受制则凶不成。'));
+  } else {
+    lines.push('卦中无明现忌神克用，外扰较少。');
+  }
+
+  // 日辰月建提纲
+  lines.push('提纲：日辰' + dayGz + '（能冲能合、能生能克，断卦第一枢纽）、月建' + monthGz +
+    '（司令一月之权）。二者生扶用神则事成，克伤用神则事阻。');
+
+  // 综合判断（书规）
+  const yWang = (yong.wang === '旺' || yong.wang === '相');
+  const yYou = (yong.wang === '休' || yong.wang === '囚' || yong.wang === '死');
+  const yBad = yong.kong || yong.poMonth;
+  const rel = r.k;
+  // 世用基本吉凶
+  let tone;
+  if (yBad) tone = '凶';
+  else if (yYou && (rel === '克我' || rel === '我生')) tone = '凶';
+  else if (jiDong && !yuanDong) tone = '凶';
+  else if (yWang && (rel === '生我' || rel === '比和' || rel === '我克')) tone = '吉';
+  else if (rel === '生我') tone = '吉';
+  else if (rel === '克我') tone = '凶';
+  else if (rel === '我生') tone = '平';
+  else if (rel === '我克') tone = '平偏吉';
+  else tone = '平';
+
+  let concl;
+  if (tone === '吉') concl = '综合看，用神得令、与世爻相生或相比，原神有气而忌神不张，此事可成，宜积极把握。';
+  else if (tone === '平偏吉') concl = '综合看，用神中和、你须主动用力（我克为得、比和主稳），事可成但非唾手，稳步推进即可。';
+  else if (tone === '平') concl = '综合看，用神不弱不强，需你付出心力（世生用神主耗），成败在人谋，踏实为之。';
+  else concl = '综合看，用神受制、落空破或遭忌神动克，此事阻力较大，宜守不宜进，或待出空、过月、原神得力之时再图。';
   lines.push('【白话总断】' + concl);
   return { yong: ys, lines };
 }

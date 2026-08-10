@@ -154,6 +154,11 @@ export function analyze(loKey, upKey, dong, meta) {
   const tiWx = wxOf(tiKey), yongWx = wxOf(yongKey);
   const rel = relation(tiWx, yongWx);
 
+  // 卦气旺衰（依农历月）
+  const lunarMonth = (meta && meta.lunar && meta.lunar.month) || null;
+  const tiQi = lunarMonth ? guaQi(tiWx, lunarMonth) : null;
+  const yongQi = lunarMonth ? guaQi(yongWx, lunarMonth) : null;
+
   return {
     meta: meta || {},
     dong,
@@ -167,7 +172,8 @@ export function analyze(loKey, upKey, dong, meta) {
     huTi: { key: huLo, name: TRIGRAM[huLo].name, wx: wxOf(huLo) },
     huYong: { key: huUp, name: TRIGRAM[huUp].name, wx: wxOf(huUp) },
     rel,
-    judge: judge(tiKey, yongKey, bianYongKey, huLo, huUp, dongInLower)
+    tiQi, yongQi,
+    judge: judge(tiKey, yongKey, bianYongKey, huLo, huUp, dongInLower, dong, tiQi, yongQi)
   };
 }
 
@@ -180,25 +186,39 @@ export function relation(tiWx, yongWx) {
   return { k: '', t: '', good: 1, say: '' };
 }
 
-function judge(tiKey, yongKey, bianYongKey, huLoKey, huUpKey, dongInLower) {
+function judge(tiKey, yongKey, bianYongKey, huLoKey, huUpKey, dongInLower, dong, tiQi, yongQi) {
   const ti = wxOf(tiKey);
   const r = relation(ti, wxOf(yongKey));
   const rb = relation(ti, wxOf(bianYongKey));
   const rh = relation(ti, wxOf(huLoKey));
   const out = [];
   out.push({ t: '一、体用定主客', s: '动爻在' + (dongInLower ? '下卦' : '上卦') + '，故' + (dongInLower ? '下' : '上') + '为用、' + (dongInLower ? '上' : '下') + '为体。体卦' + TRIGRAM[tiKey].name + '（' + ti + '）为我、为事情主体；用卦' + TRIGRAM[yongKey].name + '（' + wxOf(yongKey) + '）为他、为所占之事。' });
-  out.push({ t: '二、看眼下', s: r.t + '：' + r.say });
-  out.push({ t: '三、看过程（互卦）', s: '互卦为' + TRIGRAM[huLoKey].name + '下' + TRIGRAM[huUpKey].name + '上，主事情中间一段的曲折。互卦与体' + rh.t.replace('体', '') + '，' + rh.say.replace('其事大吉', '中途有助').replace('为吉', '中途可控') });
-  out.push({ t: '四、看结果（变卦）', s: '用卦变为' + TRIGRAM[bianYongKey].name + '（' + wxOf(bianYongKey) + '），' + rb.t + '，' + rb.say + '此为事情最终的落点。' });
+  out.push({ t: '二、看眼下（体用关系）', s: r.t + '：' + r.say });
+  // 卦气旺衰参断
+  if (tiQi) {
+    out.push({ t: '三、看卦气旺衰', s: '体卦' + TRIGRAM[tiKey].name + '属' + ti + '，于' + tiQi.s + '为【' + tiQi.v + '】——' + tiQi.t +
+      (yongQi ? '；用卦' + TRIGRAM[yongKey].name + '属' + wxOf(yongKey) + '，于' + yongQi.s + '为【' + yongQi.v + '】。' : '') + '卦气旺则事速而有气，衰则事迟而力弱。' });
+  }
+  out.push({ t: (tiQi ? '四' : '三') + '、看过程（互卦）', s: '互卦为' + TRIGRAM[huLoKey].name + '下' + TRIGRAM[huUpKey].name + '上，主事情中间一段的曲折。互卦与体' + rh.t.replace('体', '') + '，' + rh.say.replace('其事大吉', '中途有助').replace('为吉', '中途可控') });
+  out.push({ t: (tiQi ? '五' : '四') + '、看结果（变卦）', s: '用卦变为' + TRIGRAM[bianYongKey].name + '（' + wxOf(bianYongKey) + '），' + rb.t + '，' + rb.say + '此为事情最终的落点。' });
+  // 先天卦数定应期
+  const shu = triToNum(tiKey) + triToNum(yongKey) + dong; // 体用数之和再加动爻数（传统取总数）
+  const dongNear = dongInLower;
+  out.push({ t: (tiQi ? '六' : '五') + '、先天数定应期', s: '上卦' + TRIGRAM[upKeyOfGuess(tiKey, yongKey, dongInLower)].name + '数' + triToNum(upKeyOfGuess(tiKey, yongKey, dongInLower)) +
+    '、下卦' + TRIGRAM[loKeyOfGuess(tiKey, yongKey, dongInLower)].name + '数' + triToNum(loKeyOfGuess(tiKey, yongKey, dongInLower)) +
+    '，先天总数' + shu + '。应期多于此数（天/月/日，须合时令与事体取用）；动爻在' + (dongNear ? '内卦（初至三爻），事近、应期速' : '外卦（四至上爻），事远、应期迟') + '。' });
   const score = r.good * 2 + rb.good * 2 + rh.good;
   let concl;
   if (score >= 12) concl = '通盘看，体强用弱、生扶有力，是成事之象。';
   else if (score >= 8) concl = '通盘看，吉凶参半而偏顺，事可成但须用力。';
   else if (score >= 5) concl = '通盘看，耗多得少，宜守不宜进，缓则有转机。';
   else concl = '通盘看，体受制而无援，此事阻力大，宜暂停另图。';
-  out.push({ t: '五、总断', s: concl + '梅花之法，卦为骨、象为肉；再合当时所见所闻的「外应」，方为完卦。' });
+  out.push({ t: (tiQi ? '七' : '六') + '、总断', s: concl + '梅花之法，卦为骨、象为肉；再合当时所见所闻的「外应」，方为完卦。' });
   return out;
 }
+// 由体用还原上下卦（judge 内用于应期表述）
+function upKeyOfGuess(tiKey, yongKey, dongInLower) { return dongInLower ? tiKey : yongKey; }
+function loKeyOfGuess(tiKey, yongKey, dongInLower) { return dongInLower ? yongKey : tiKey; }
 
 /* ============ 三要十应（外应） ============ */
 export const WAIYING = [
@@ -218,5 +238,18 @@ export const WAIYING = [
 export function tailor(question, r) {
   if (!question) return '';
   const rel = r.rel;
-  return '你问的是「' + question + '」。起得本卦' + r.ben.name + '：体卦为' + r.ti.name + '（' + r.ti.wx + '，代表你 / 事情主体），用卦为' + r.yong.name + '（' + r.yong.wx + '，代表所占之事）。二者关系为【' + rel.t + '】——' + rel.say + ' 再合互卦、变卦与起卦时的外应，可推知此事吉凶走向。';
+  let s = '你问的是「' + question + '」。起得本卦' + r.ben.name +
+    '（上' + TRIGRAM[r.ben.upKey].name + '下' + TRIGRAM[r.ben.loKey].name + '），动第' + r.dong + '爻。';
+  s += '体卦为' + r.ti.name + '（' + r.ti.wx + '，代表你 / 事情主体），用卦为' + r.yong.name +
+    '（' + r.yong.wx + '，代表所占之事）。二者关系为【' + rel.t + '】——' + rel.say;
+  if (r.tiQi) s += '卦气上，体卦于' + r.tiQi.s + '为【' + r.tiQi.v + '】' + (r.yongQi ? '，用卦为【' + r.yongQi.v + '】' : '') + '。';
+  s += '变卦为' + r.bian.name + '（用卦所变），互卦为' + r.hu.name + '。';
+  // 体用五态断语
+  if (rel.k === '用生体') s += '用生体，外来生扶、有人有助，事多吉。';
+  else if (rel.k === '体克用') s += '体克用，事在掌握、虽费心力终得，为吉。';
+  else if (rel.k === '比和') s += '体用比和，彼此帮衬，事多顺遂。';
+  else if (rel.k === '体生用') s += '体生用，我去生他、出多入少，谋事多耗。';
+  else if (rel.k === '用克体') s += '用克体，事来掣肘、阻力明显，宜守不宜进。';
+  s += '再合起卦时的外应（天时、地理、人事、声音、五色等），方为完卦。';
+  return s;
 }
