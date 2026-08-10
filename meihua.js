@@ -213,3 +213,10 @@ export const WAIYING = [
   { k: '写文', v: '来人所书之字、所持之物，取其数与象。' },
   { k: '声音', v: '所闻声之远近、清浊，清亮主吉，嘶哑主滞。' }
 ];
+
+// 把体用结果与「所问之事」用白话挂钩
+export function tailor(question, r) {
+  if (!question) return '';
+  const rel = r.rel;
+  return '你问的是「' + question + '」。起得本卦' + r.ben.name + '：体卦为' + r.ti.name + '（' + r.ti.wx + '，代表你 / 事情主体），用卦为' + r.yong.name + '（' + r.yong.wx + '，代表所占之事）。二者关系为【' + rel.t + '】——' + rel.say + ' 再合互卦、变卦与起卦时的外应，可推知此事吉凶走向。';
+}

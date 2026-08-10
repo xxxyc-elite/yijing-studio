@@ -2,9 +2,9 @@
 import { TRIGRAM, HEX, cast, search, combine, allTrigrams, sampleWords, UNITS, BASIC, dailyHex, hexYaos, triYaos, TRIS } from './data.js';
 import * as store from './store.js';
 import { fourPillars, GAN, ZHI, SHICHEN, hourZhiIndex, lunarDate } from './calendar.js';
-import { paipan as liuPaipan, tossSix, YONGSHEN, LIUSHEN } from './liuyao.js';
-import { byTime as mhByTime, byNumbers as mhByNumbers, byChars as mhByChars, byRandom as mhByRandom, WAIYING, hexOf as mhHexOf } from './meihua.js';
-import { paipan as qmPaipan, nowPaipan as qmNowPaipan, POS_NAME, RING } from './qimen.js';
+import { paipan as liuPaipan, tossSix, YONGSHEN, LIUSHEN, interpret as liuInterpret } from './liuyao.js';
+import { byTime as mhByTime, byNumbers as mhByNumbers, byChars as mhByChars, byRandom as mhByRandom, WAIYING, hexOf as mhHexOf, tailor as mhTailor } from './meihua.js';
+import { paipan as qmPaipan, nowPaipan as qmNowPaipan, POS_NAME, RING, interpret as qmInterpret } from './qimen.js';
 
 const app = document.getElementById('app');
 const navToggle = document.querySelector('.nav-toggle');
@@ -24,17 +24,22 @@ function yaoRow(yang, opts = {}) {
 function hexHTML(yaos, small) {
   return `<div class="hex ${small ? 'small' : ''}">${yaos.map(y => yaoRow(y.yang, y)).join('')}</div>`;
 }
+// 兼容两种入参：数字数组(0/1) 或 {yang} 对象数组
+function lineYang(v) {
+  return (v && typeof v === 'object') ? !!v.yang : v === 1;
+}
 function sixYaoFromLines(lines, movingIdx = []) {
   const out = [];
   for (let i = 5; i >= 0; i--) {
     const pos = i + 1;
     const m = movingIdx.indexOf(i) !== -1;
-    out.push({ pos, yang: lines[i] === 1, moving: m, old: m });
+    const base = lines[i];
+    out.push({ pos, yang: lineYang(base), moving: m || (base && base.moving), old: m || (base && base.old) });
   }
   return out;
 }
 function triHTML(key, small) {
-  const yaos = triYaos(key).slice().reverse().map((v, i) => ({ pos: 3 - i, yang: v === 1, moving: false, old: false }));
+  const yaos = triYaos(key).slice().reverse().map((v, i) => ({ pos: 3 - i, yang: lineYang(v), moving: false, old: false }));
   return hexHTML(yaos, small);
 }
 
@@ -45,7 +50,7 @@ const S = {
   atlas: { filter: 'all', upKey: null },
   lessonQA: {},
   liuyao: { result: null, question: '', when: null },
-  meihua: { result: null, method: 'time', inputs: {} },
+  meihua: { result: null, method: 'time', question: '', inputs: {} },
   qimen: { result: null, when: null }
 };
 
@@ -466,31 +471,146 @@ function detailBind(n) {
   app.querySelectorAll('[data-route]').forEach(el => el.addEventListener('click', () => go(el.dataset.route)));
 }
 
-/* ===================== 基础原理 ===================== */
+/* ===================== 基础原理（图文并茂，贴合《易学入门》等参考书） ===================== */
 function basicHTML() {
-  const stages = [
-    { t: '太极生两仪', d: '太极是未分化的整体；一动就分出阴阳。阴为柔、静、收敛；阳为刚、动、生发。' },
-    { t: '两仪生四象', d: '阴阳再各分老少：老阳、少阴、少阳、老阴。老阳老阴会变化，就是起卦时的「动爻」。' },
-    { t: '四象生八卦', d: '三爻叠成一卦，共八个基本卦：乾天、坤地、震雷、巽风、坎水、离火、艮山、兑泽。' },
-    { t: '八卦成六十四卦', d: '上卦加下卦，8×8 得六十四卦。下卦为内、为近；上卦为外、为远。' }
-  ];
-  const stageHTML = stages.map((s,i)=>`<div class="stage"><div class="stage-no">${i+1}</div><div class="stage-body"><div class="stage-title">${s.t}</div><div class="stage-text">${s.d}</div></div></div>`).join('');
+  // 一、阴阳：把 BASIC.yinYang 画成两张爻图卡
+  const yyCards = BASIC.yinYang.map(y => `
+    <div class="yy-card">
+      <div class="yy-glyph">${hexHTML([{ yang: y.key === 'yang' }])}</div>
+      <div class="yy-name">${esc(y.name)}</div>
+      <div class="yy-desc">${esc(y.desc)}</div>
+    </div>`).join('');
+
+  // 二、爻：上为二爻、下为初爻的小示意（最底下才是第一爻）
+  const yaoDemo = `
+    <div class="yao-row"><span class="yao-label">二</span>${yaoRow(false)}</div>
+    <div class="yao-row"><span class="yao-label">初</span>${yaoRow(true)}</div>`;
+
+  // 三、四象：两爻一组 + 动/静标签
+  const sxCards = BASIC.sixiang.map(s => `
+    <div class="sx-card">
+      <div class="yy-glyph">${hexHTML(s.yaos, true)}</div>
+      <div class="sx-name">${esc(s.name)}</div>
+      <span class="tag ${s.dong ? 'seal' : ''}">${s.dong ? '动（会变）' : '静（不变）'}</span>
+      <div class="sx-note">${esc(s.note)}</div>
+    </div>`).join('');
+
+  // 四、八卦：卦图 + 自然之象 + 先天数 + 特性
+  const triCards = BASIC.trigrams.map(t => `
+    <div class="tri-card">
+      <div class="tri-img">${triHTML(t.key, true)}</div>
+      <div>
+        <div class="tri-name">${esc(t.name)}</div>
+        <div class="tri-nature">${esc(t.nature)} · 先天数 ${esc(t.num)}</div>
+        <div class="tri-desc">${esc(t.desc)}</div>
+        <div class="tri-info">${esc(t.info)}</div>
+      </div>
+    </div>`).join('');
+
+  // 五、先天/后天方位图（3×3，中空）
+  const baguaGrid = (flat) => flat.map(c => c.empty
+    ? `<div class="bg-cell empty"></div>`
+    : `<div class="bg-cell"><div class="bg-name">${esc(c.name)}</div><div class="bg-pos">${esc(c.pos)}</div></div>`).join('');
+
+  // 六、六十四卦：下卦 × 上卦 = 64
+  const comboTris = Object.keys(TRIGRAM).map(k => `<div class="tri-img">${triHTML(k, true)}</div>`).join('');
+
+  // 七、爻位之象：上→初 反向，配人体对应卦象图
+  const yxList = BASIC.yaoXiang.slice().reverse().map(y => `
+    <div class="yx-item">
+      <span class="yx-label">${esc(y.name)}</span>
+      <span class="yx-body">${esc(y.body)}</span>
+      <span class="yx-meta">${esc(y.stage)} · ${esc(y.role)}</span>
+    </div>`).join('');
+  const yxTable = `
+    <div class="table-wrap"><table>
+      <tr><th>爻位</th><th>人体对应</th><th>阶段</th><th>角色</th><th>说明</th></tr>
+      ${BASIC.yaoXiang.map(y => `<tr><td>${esc(y.name)}</td><td>${esc(y.body)}</td><td>${esc(y.stage)}</td><td>${esc(y.role)}</td><td>${esc(y.note)}</td></tr>`).join('')}
+    </table></div>`;
+  const yxHex = hexHTML([
+    { yang: false }, { yang: true }, { yang: false }, { yang: true }, { yang: false }, { yang: true }
+  ]); // 上→初：仅作位置示意
+
   return `
   <div class="page">
     <h1>基础原理</h1>
-    <div class="card">${stageHTML}</div>
-    <div class="card"><div class="card-title">先天八卦与后天八卦</div>
-      <p><strong>先天八卦</strong>讲对待、讲本体：乾南坤北，离东坎西，震东北巽西南，艮西北兑东南。</p>
-      <p><strong>后天八卦</strong>讲流行、讲应用：离南坎北，震东兑西，巽东南坤西南，艮东北乾西北。</p>
+    <p class="subtitle">从「一条线」开始，看懂《易经》是怎么把世界画成卦的。本节主要参考张延生《易学入门》《易学应用》。</p>
+
+    <div class="callout seal">
+      <b>先搞懂「三易」。</b>${esc(BASIC.sanyiNote)}
     </div>
-    <div class="card"><div class="card-title">爻位之象</div>
-      <table><tr><th>爻位</th><th>人体</th><th>阶段</th><th>位置感</th></tr>
-      <tr><td>初爻</td><td>足、趾</td><td>开始</td><td>最下、民间</td></tr>
-      <tr><td>二爻</td><td>小腿、股</td><td>渐起</td><td>地道、臣位</td></tr>
-      <tr><td>三爻</td><td>腰、腹</td><td>多凶</td><td>人位、近事</td></tr>
-      <tr><td>四爻</td><td>胸、背</td><td>多惧</td><td>近君、外事</td></tr>
-      <tr><td>五爻</td><td>颈、首</td><td>功成</td><td>君位、尊位</td></tr>
-      <tr><td>上爻</td><td>顶、颠</td><td>极反</td><td>过亢、事终</td></tr></table>
+
+    <section class="basic-sec">
+      <h2>一、阴阳：世界的两种基本力量</h2>
+      <p>${esc(BASIC.xyNote)}</p>
+      <div class="yy-grid">${yyCards}</div>
+    </section>
+
+    <section class="basic-sec">
+      <h2>二、爻：把阴阳画成一条线</h2>
+      <p>${esc(BASIC.yaoNote)}</p>
+      <div class="card" style="text-align:center">
+        <div style="display:inline-block;text-align:left">${yaoDemo}</div>
+        <p class="card-sub" style="margin-top:14px">上图：上为「二爻」、下为「初爻」——最底下才是第一爻。</p>
+      </div>
+    </section>
+
+    <section class="basic-sec">
+      <h2>三、四象：阴阳再分老少</h2>
+      <p>两爻相叠有四种组合，叫「四象」。其中老阳、老阴会变化，正是起卦时「动爻」的来源。</p>
+      <div class="sx-grid">${sxCards}</div>
+    </section>
+
+    <section class="basic-sec">
+      <h2>四、八卦：三爻叠成八种</h2>
+      <p>${esc(BASIC.baguaNote)}</p>
+      <div class="tri-grid">${triCards}</div>
+      <div class="callout"><b>八卦之「象」从哪来？</b>${esc(BASIC.quxiangNote)}</div>
+    </section>
+
+    <section class="basic-sec">
+      <h2>五、先天与后天：两种排方位的方法</h2>
+      <p>${esc(BASIC.fangweiNote)}</p>
+      <div class="bagua-wrap">
+        <div class="bagua-col"><h3>先天八卦（结构 / 对待）</h3><div class="bagua-grid">${baguaGrid(BASIC.xiantianFlat)}</div></div>
+        <div class="bagua-col"><h3>后天八卦（流行 / 实用）</h3><div class="bagua-grid">${baguaGrid(BASIC.houtianFlat)}</div></div>
+      </div>
+    </section>
+
+    <section class="basic-sec">
+      <h2>六、六十四卦：两个八卦上下一叠</h2>
+      <p>${esc(BASIC.hexNote)}</p>
+      <div class="card" style="text-align:center">
+        <div class="combo-row">
+          <div><div class="combo-label">下卦（8 选 1）</div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px">${comboTris}</div></div>
+          <span class="combo-eq">×</span>
+          <div><div class="combo-label">上卦（8 选 1）</div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px">${comboTris}</div></div>
+          <span class="combo-eq">= 64</span>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:14px">示例：上乾下乾 → <b>乾为天</b>（第 1 卦）。把任意两个八卦这样一叠，就能得到六十四卦中的一卦。</div>
+    </section>
+
+    <section class="basic-sec">
+      <h2>七、爻位之象：同一个爻，位置不同意思不同</h2>
+      <p>${esc(BASIC.yaoXiangNote)}</p>
+      <div class="yaowei-flex">
+        <div class="yaowei-hex">${yxHex}</div>
+        <div class="yx-list">${yxList}</div>
+      </div>
+      ${yxTable}
+    </section>
+
+    <section class="basic-sec">
+      <h2>八、对应思维：万物在关系中相互转化</h2>
+      <div class="callout"><b>张延生的「对应观」。</b>${esc(BASIC.duiyingNote)}</div>
+      <div style="text-align:center;margin-top:20px">
+        <button class="btn btn-primary" data-route="#/learn">学完了，去闯关试试 →</button>
+      </div>
+    </section>
+
+    <div class="callout" style="margin-top:24px">
+      <b>本节参考书目：</b>张延生《易学入门》《易学应用》——阴阳、爻、八卦取象、先天/后天方位、爻位之象、对应思维的讲解主要据此。
     </div>
   </div>`;
 }
@@ -617,6 +737,10 @@ function liuyaoHTML() {
     </div>
     <div class="card"><div class="card-title">用神参考</div><div class="grid">${YONGSHEN.map(y=>`<div><strong>${y.qin}</strong>：${y.use}</div>`).join('')}</div></div>
     <div class="card"><div class="card-title">简断</div>${r.summary.map(s=>`<p>${esc(s)}</p>`).join('')}</div>`;
+  const ir = liuInterpret(r.question, r);
+  if (ir) {
+    body += `<div class="card"><div class="card-title">白话解读（问事定向）${ir.yong ? ` · 用神：${ir.yong.qin}` : ''}</div>${ir.lines.map(s=>`<p>${esc(s)}</p>`).join('')}</div>`;
+  }
   }
   body += `</div>`;
   return body;
@@ -662,6 +786,7 @@ function meihuaHTML() {
     <div class="card">
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${methodBar}</div>
       ${inputArea}
+      <div class="form-row" style="margin-top:14px"><label class="form-label">所问之事（可选，用于白话挂钩）</label><input id="mhQuestion" placeholder="如：问这段感情能否成" value="${esc(st.question || '')}"></div>
       <button class="btn btn-primary" id="mhCast">起卦</button>
     </div>`;
   if (st.result) {
@@ -678,7 +803,8 @@ function meihuaHTML() {
       <p>当下：<strong>${r.rel.t}</strong> — ${r.rel.say}</p>
     </div>
     <div class="card"><div class="card-title">断卦步骤</div>${r.judge.map(j=>`<p><strong>${j.t}</strong>：${j.s}</p>`).join('')}</div>
-    <div class="card"><div class="card-title">三要十应 · 外应参考</div><div class="grid">${WAIYING.slice(0,6).map(w=>`<div><strong>${w.k}</strong>：${w.v}</div>`).join('')}</div></div>`;
+    <div class="card"><div class="card-title">三要十应 · 外应参考</div><div class="grid">${WAIYING.slice(0,6).map(w=>`<div><strong>${w.k}</strong>：${w.v}</div>`).join('')}</div></div>
+    ${st.question ? `<div class="card"><div class="card-title">白话解读（问事定向）</div><p>${esc(mhTailor(st.question, r))}</p></div>` : ''}`;
   }
   body += `</div>`;
   return body;
@@ -689,6 +815,7 @@ function meihuaBind() {
   if (st.when) app.querySelector('#mhTime').value = fmtDTLocal(st.when);
   app.querySelector('#mhNow')?.addEventListener('click', () => { S.meihua.when = nowDT(); render(); });
   app.querySelector('#mhCast')?.addEventListener('click', () => {
+    S.meihua.question = app.querySelector('#mhQuestion').value.trim() || '';
     let r;
     if (st.method === 'time') {
       const w = parseDT(app.querySelector('#mhTime').value) || nowDT();
@@ -747,6 +874,10 @@ function qimenHTML() {
     </div>
     <div class="qimen-board">${cells}</div>
     <div class="card"><div class="card-title">占断要点</div>${r.tip.map(t=>`<p>${esc(t)}</p>`).join('')}</div>`;
+  const qir = qmInterpret(r.question, r);
+  if (qir) {
+    body += `<div class="card"><div class="card-title">白话解读（问事定向）${qir.yong ? ` · 用神：${qir.yong.label}` : ''}</div>${qir.lines.map(s=>`<p>${esc(s)}</p>`).join('')}</div>`;
+  }
   }
   body += `</div>`;
   return body;

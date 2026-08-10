@@ -235,6 +235,54 @@ function guide(dun, ju, p, zhiFuStar, zhiShiDoor) {
   return arr;
 }
 
+/* ============ 用神定向 · 问事白话解读 ============ */
+const STAR_JI = { 天辅: '吉', 天心: '吉', 天任: '吉', 天禽: '吉', 天冲: '平', 天英: '平', 天蓬: '凶', 天芮: '凶', 天柱: '凶' };
+const SPIRIT_JI = { 值符: '吉', 六合: '吉', 太阴: '吉', 九地: '吉', 九天: '吉', 腾蛇: '凶', 白虎: '凶', 玄武: '凶' };
+
+// 依问题关键词取用神宫类型
+export function pickYong(q) {
+  const s = (q || '').replace(/\s/g, '');
+  if (/财|生意|买卖|投资|经营|赚|收入|发财/.test(s)) return { kind: 'door', name: '生门', label: '求财' };
+  if (/官|工作|事业|职位|升职|求职|考公|功名/.test(s)) return { kind: 'door', name: '开门', label: '求官求事业' };
+  if (/病|健康|医药|身体|疾|症/.test(s)) return { kind: 'star', name: '天芮', label: '问病' };
+  if (/出行|出门|旅行|外出|搬迁|旅游|出远门/.test(s)) return { kind: 'door', name: '休门', label: '出行' };
+  if (/婚|感情|对象|恋爱|妻|夫|姻缘/.test(s)) return { kind: 'spirit', name: '六合', label: '婚姻感情' };
+  if (/讼|官司|诉讼|打官司|纠纷|是非/.test(s)) return { kind: 'door', name: '惊门', label: '诉讼' };
+  if (/考试|学业|升学|文凭|读书|学历/.test(s)) return { kind: 'door', name: '景门', label: '考试' };
+  return null;
+}
+
+// 依据问题解读用神宫（白话）
+export function interpret(question, res) {
+  const y = pickYong(question);
+  const lines = [];
+  if (!y) {
+    lines.push('未识别到明确用神。可在「所问之事」写明 财 / 工作 / 病 / 出行 / 婚姻 / 官司 / 考试 等，系统会取对应用神宫解读。');
+    return { yong: null, lines };
+  }
+  let pos = null;
+  if (y.kind === 'door') pos = Object.keys(res.doorAt).find(p => res.doorAt[p] && res.doorAt[p].name === y.name);
+  else if (y.kind === 'star') pos = Object.keys(res.starAt).find(p => res.starAt[p] && res.starAt[p].name === y.name);
+  else if (y.kind === 'spirit') pos = Object.keys(res.spiritAt).find(p => res.spiritAt[p] && res.spiritAt[p].name === y.name);
+  if (pos == null) {
+    lines.push('用神【' + y.label + '】未在盘中找到对应宫位，请换个问法重试。');
+    return { yong: y, lines };
+  }
+  const posN = Number(pos);
+  const door = res.doorAt[pos], star = res.starAt[pos], spirit = res.spiritAt[pos];
+  const di = res.dipan[pos], tian = res.tianPan[pos];
+  lines.push('你问的是「' + question + '」，用神取【' + y.label + '】（' + y.name + '）。');
+  lines.push(y.name + '落' + POS_NAME[posN] + '宫：门为【' + door.name + '·' + door.jiXiong + '】，星为【' + star.name + '】，神为【' + spirit.name + '】；地盘' + di + '、天盘' + tian + '。');
+  const dJ = door.jiXiong, sJ = STAR_JI[star.name] || '平', gJ = SPIRIT_JI[spirit.name] || '平';
+  lines.push('白话：用神宫门属【' + dJ + '】、星属【' + sJ + '】、神属【' + gJ + '】。门' + door.desc + '；星' + star.desc + '。');
+  let tone;
+  if (dJ === '大吉' || dJ === '吉') tone = '吉象明显，所谋易遂，可放手去做';
+  else if (dJ === '凶') tone = '凶象显现，宜谨慎收敛、不宜妄动';
+  else tone = '吉凶参半，需结合星神与日月旺衰综合判断，稳中求进';
+  lines.push('【白话总断】综合用神宫的「门、星、神」看，' + tone + '。奇门重「用神」，以上仅为核心判断，实际占断还须看用神是否得令、是否空亡入墓。');
+  return { yong: y, lines };
+}
+
 /* ============ 日期辅助 ============ */
 export function nowPaipan(question) {
   const d = new Date();

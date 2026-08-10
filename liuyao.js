@@ -288,7 +288,83 @@ function summarize(ben, bian, p) {
   return out;
 }
 
-/* ============ 手动指定卦 ============ */
+/* ============ 用神定向 · 问事白话解读 ============ */
+const YONG_LABEL = {
+  父母: '父母（文书、学业、长辈、房屋车马）',
+  子孙: '子孙（子女、医药、解忧平安）',
+  官鬼: '官鬼（工作、功名、病忧、丈夫）',
+  妻财: '妻财（钱财、货物、妻子）',
+  兄弟: '兄弟（朋友、同辈、竞争）'
+};
+// 依问题关键词取用神六亲
+export function pickYongShen(q) {
+  const s = (q || '').replace(/\s/g, '');
+  const rules = [
+    { qin: '妻财', kw: ['财', '钱', '工资', '收入', '生意', '买卖', '投资', '股票', '经营', '妻子', '老婆', '货', '赚', '利', '薪酬', '报酬'] },
+    { qin: '官鬼', kw: ['工作', '事业', '职位', '升职', '求职', '官', '功名', '丈夫', '男朋友', '官司', '诉讼', '贼', '盗', '牢', '疾病', '病', '忧', '麻烦', '考公'] },
+    { qin: '父母', kw: ['考试', '学业', '读书', '学习', '文凭', '学历', '文书', '合同', '签约', '证件', '证书', '房产', '房屋', '房子', '车', '买房', '长辈', '父母', '老师', '消息', '书信', '邮件', '签证', '车票', '论文'] },
+    { qin: '子孙', kw: ['孩子', '子女', '儿', '女', '怀孕', '生育', '医药', '医生', '宠物', '解忧', '平安', '佛', '求子', '健康', '养生'] },
+    { qin: '兄弟', kw: ['朋友', '兄弟', '姐妹', '同学', '同事', '合伙', '竞争', '借贷', '分手'] }
+  ];
+  for (const r of rules) if (r.kw.some(k => s.indexOf(k) !== -1)) return { qin: r.qin, label: YONG_LABEL[r.qin] };
+  return null;
+}
+
+// 五行生克关系（fromWx 对 toWx）
+function wxRel(fromWx, toWx) {
+  if (fromWx === toWx) return { k: '比和', say: '比和相助，彼此帮衬' };
+  if (SHENG[fromWx] === toWx) return { k: '我生', say: '我去生扶对方，主付出、费力气' };
+  if (SHENG[toWx] === fromWx) return { k: '生我', say: '对方来生我，主有人相助、事易成' };
+  if (KE[fromWx] === toWx) return { k: '我克', say: '我能制约对方，事在掌握但须用力' };
+  if (KE[toWx] === fromWx) return { k: '克我', say: '对方来克我，主受阻、有压力' };
+  return { k: '', say: '' };
+}
+
+// 依据问题解读本卦（白话）
+export function interpret(question, res) {
+  const ys = pickYongShen(question);
+  const lines = [];
+  if (!ys) {
+    lines.push('未识别到明确用神。可在「所问之事」里写明 财 / 工作 / 考试 / 子女 / 朋友 等关键词，系统会自动取用神并定向解读。');
+    return { yong: null, lines };
+  }
+  const ben = res.ben;
+  const yong = ben.yaos.find(y => y.qin === ys.qin && !y.kong && !y.poMonth)
+    || ben.yaos.find(y => y.qin === ys.qin);
+  const shi = ben.yaos[ben.shi - 1];
+  lines.push('你问的是「' + question + '」，取【' + ys.label + '】为用神（所占之事的核心）。');
+  if (!yong) {
+    lines.push('用神未在本卦出现，须查伏神（本宫首卦同爻位之爻伏于其下）论之。当前盘用神伏藏，事机未显，宜静观其变。');
+  } else {
+    const posTxt = yong.pos + '爻' + (yong.shi ? '（世爻）' : yong.ying ? '（应爻）' : '');
+    lines.push('用神在' + posTxt + '，五行属' + yong.wx + '；' + (yong.wang || '平') + '（按月令论旺衰，旺相则有气、休囚死则无力）。');
+    if (yong.moving) lines.push('用神发动（为动爻），其事变化快、征兆明显，须重点看它变出之爻。');
+    if (yong.kong) lines.push('用神落旬空，暂时不起作用，须待出空之日方能应事，不可急于求成。');
+    if (yong.poMonth) lines.push('用神逢月破，气散无力，所谋多难成，宜缓图或另谋。');
+    const r = wxRel(shi.wx, yong.wx);
+    lines.push('世爻（代表你）属' + shi.wx + '，与用神关系为【' + r.k + '】——' + r.say + '。');
+    const yuan = SHENG[yong.wx];   // 生用神者
+    const ji = KE[yong.wx];        // 克用神者
+    const yuanYao = ben.yaos.find(y => y.wx === yuan && !y.kong);
+    const jiYao = ben.yaos.find(y => y.wx === ji && !y.kong);
+    if (yuanYao && yuanYao.moving) lines.push('原神（生用神的' + yuan + '）在' + yuanYao.pos + '爻发动，来生助用神，吉上加吉。');
+    if (jiYao && jiYao.moving) lines.push('忌神（克用神的' + ji + '）在' + jiYao.pos + '爻发动，来克害用神，须防阻碍。');
+  }
+  lines.push('日辰' + res.when.day.gz + '、月建' + res.when.month.gz + '为断卦提纲：日辰能冲合生克、月建司令一月之权，二者对用神有利则事成。');
+  let concl = '';
+  if (yong) {
+    const rel = wxRel(shi.wx, yong.wx).k;
+    const good = (yong.wang === '旺' || yong.wang === '相') && !yong.kong && !yong.poMonth && (rel === '生我' || rel === '比和' || rel === '我克');
+    const bad = yong.kong || yong.poMonth || rel === '克我';
+    if (bad) concl = '综合看，用神受制或落空破，此事阻力较大，宜守不宜进，或待时机（出空、过月）再图。';
+    else if (good) concl = '综合看，用神得令、与世爻相生或相比，此事可成，宜积极把握。';
+    else concl = '综合看，用神中和、需你主动用力，事情可成但非唾手可得，稳步推进即可。';
+  } else {
+    concl = '用神伏藏，事机未显，宜静观其变、补足相关条件后再问。';
+  }
+  lines.push('【白话总断】' + concl);
+  return { yong: ys, lines };
+}
 export function fromLines(lines6, movingIdx, when, question) {
   const tosses = lines6.map((v, i) => {
     const moving = movingIdx.indexOf(i) !== -1;
