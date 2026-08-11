@@ -85,12 +85,14 @@ function homeHTML() {
 
   return `
   <section class="hero">
+    <div class="hero-watermark brush">易</div>
     <div class="hero-inner">
-      <h1>易卦研习</h1>
-      <p>从《易经》本经出发，读懂六十四卦、万物类象，再进入六爻、梅花、奇门三式应用。传统文化，也可以很新潮。</p>
+      <div class="eyebrow">易经 · 象数 · 三式</div>
+      <h1 class="hero-title"><span class="brush">易</span>卦研习</h1>
+      <p class="hero-lead">观阴阳之变，察万物之象。从六十四卦到六爻、梅花、奇门，把古老的智慧，用在当下的抉择里。</p>
       <div class="hero-actions">
-        <button class="btn btn-primary" data-route="#/atlas">翻开六十四卦</button>
-        <button class="btn btn-secondary" data-route="#/liuyao">起一卦看看</button>
+        <button class="btn btn-primary" data-route="#/atlas">翻阅六十四卦</button>
+        <button class="btn btn-secondary" data-route="#/liuyao">起一卦</button>
       </div>
     </div>
   </section>
@@ -109,7 +111,8 @@ function homeHTML() {
       <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
       <button class="btn btn-ink btn-sm" data-route="#/learn">继续闯关</button>
     </div>
-    <h2 style="margin-top:10px">四大研习模块</h2>
+    <div class="eyebrow" style="margin-top:18px">研读 · 明理</div>
+    <h2>四大研习模块</h2>
     <div class="grid">
       <div class="mod-card" data-route="#/atlas">
         <div class="mod-icon">📜</div>
@@ -136,7 +139,8 @@ function homeHTML() {
         <span class="mod-tag">图文详解</span>
       </div>
     </div>
-    <h2 style="margin-top:28px">三式应用</h2>
+    <div class="eyebrow" style="margin-top:36px">起占 · 三式</div>
+    <h2>三式应用</h2>
     <div class="grid">
       <div class="mod-card" data-route="#/liuyao">
         <div class="mod-icon">🪙</div>
@@ -905,7 +909,7 @@ function libraryHTML() {
   <div class="page">
     <h1>书库</h1>
     <p class="subtitle">本站内容参考以下传统典籍与现代整理本，供进一步研习。</p>
-    <div class="grid">${refs.map(r=>`<div class="card"><div class="card-title">${esc(r.t)}</div><p>${esc(r.d)}</p></div>`).join('')}</div>
+    <div class="grid">${refs.map(r=>`<div class="card lib-book"><div class="card-title">${esc(r.t)}</div><p>${esc(r.d)}</p></div>`).join('')}</div>
   </div>`;
 }
 
