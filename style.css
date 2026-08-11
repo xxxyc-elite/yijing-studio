@@ -281,12 +281,12 @@ a:hover { color: var(--seal-deep); }
 .yao {
   width: 88px; height: 9px;
   background: linear-gradient(180deg, #2a241e, var(--ink));
-  border-radius: 4px; position: relative;
+  border-radius: 0; position: relative;
   box-shadow: 0 1px 0 rgba(255,255,255,.25) inset;
 }
 .yao.yin::after {
-  content: ""; position: absolute; top: 0; bottom: 0; left: 38%; right: 38%;
-  background: var(--card); border-radius: 4px;
+  content: ""; position: absolute; top: 0; bottom: 0; left: 36%; right: 36%;
+  background: var(--card); border-radius: 0;
 }
 .hex.small .yao { width: 52px; height: 7px; }
 .hex.small .yao.yin::after { left: 34%; right: 34%; }
