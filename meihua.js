@@ -194,28 +194,22 @@ function judge(tiKey, yongKey, bianYongKey, huLoKey, huUpKey, dongInLower, dong,
   const rb = relation(ti, wxOf(bianYongKey));
   const rh = relation(ti, wxOf(huLoKey));
   const out = [];
-  out.push({ t: '一、体用定主客', s: '动爻在' + (dongInLower ? '下卦' : '上卦') + '，故' + (dongInLower ? '下' : '上') + '为用、' + (dongInLower ? '上' : '下') + '为体。体卦' + TRIGRAM[tiKey].name + '（' + ti + '）为我、为事情主体；用卦' + TRIGRAM[yongKey].name + '（' + wxOf(yongKey) + '）为他、为所占之事。' });
-  out.push({ t: '二、看眼下（体用关系）', s: r.t + '：' + r.say });
-  // 卦气旺衰参断
+  out.push({ t: '一、谁主谁客', s: '动爻在第' + dong + '爻、在' + (dongInLower ? '下卦' : '上卦') + '，所以' + (dongInLower ? '下卦是"用"、上卦是"体"' : '上卦是"用"、下卦是"体"') + '。一句大白话：体卦' + TRIGRAM[tiKey].name + '（' + ti + '）代表"你、事情的主体"，用卦' + TRIGRAM[yongKey].name + '（' + wxOf(yongKey) + '）代表"你问的那件事"。' });
+  out.push({ t: '二、眼下这一关（体用关系）', s: r.t + '：' + r.say });
   if (tiQi) {
-    out.push({ t: '三、看卦气旺衰', s: '体卦' + TRIGRAM[tiKey].name + '属' + ti + '，于' + tiQi.s + '为【' + tiQi.v + '】——' + tiQi.t +
-      (yongQi ? '；用卦' + TRIGRAM[yongKey].name + '属' + wxOf(yongKey) + '，于' + yongQi.s + '为【' + yongQi.v + '】。' : '') + '卦气旺则事速而有气，衰则事迟而力弱。' });
+    out.push({ t: '三、当下气运（卦气旺衰）', s: '现在是' + tiQi.s + '，体卦' + TRIGRAM[tiKey].name + '属' + ti + '，处在【' + tiQi.v + '】——' + tiQi.t +
+      (yongQi ? '用卦' + TRIGRAM[yongKey].name + '属' + wxOf(yongKey) + '，处在【' + yongQi.v + '】。' : '') + '卦气旺，事就来得快、有劲；衰，就来得慢、使不上力。' });
   }
-  out.push({ t: (tiQi ? '四' : '三') + '、看过程（互卦）', s: '互卦为' + TRIGRAM[huLoKey].name + '下' + TRIGRAM[huUpKey].name + '上，主事情中间一段的曲折。互卦与体' + rh.t.replace('体', '') + '，' + rh.say.replace('其事大吉', '中途有助').replace('为吉', '中途可控') });
-  out.push({ t: (tiQi ? '五' : '四') + '、看结果（变卦）', s: '用卦变为' + TRIGRAM[bianYongKey].name + '（' + wxOf(bianYongKey) + '），' + rb.t + '，' + rb.say + '此为事情最终的落点。' });
-  // 先天卦数定应期
-  const shu = triToNum(tiKey) + triToNum(yongKey) + dong; // 体用数之和再加动爻数（传统取总数）
-  const dongNear = dongInLower;
-  out.push({ t: (tiQi ? '六' : '五') + '、先天数定应期', s: '上卦' + TRIGRAM[upKeyOfGuess(tiKey, yongKey, dongInLower)].name + '数' + triToNum(upKeyOfGuess(tiKey, yongKey, dongInLower)) +
-    '、下卦' + TRIGRAM[loKeyOfGuess(tiKey, yongKey, dongInLower)].name + '数' + triToNum(loKeyOfGuess(tiKey, yongKey, dongInLower)) +
-    '，先天总数' + shu + '。应期多于此数（天/月/日，须合时令与事体取用）；动爻在' + (dongNear ? '内卦（初至三爻），事近、应期速' : '外卦（四至上爻），事远、应期迟') + '。' });
+  out.push({ t: (tiQi ? '四' : '三') + '、中间这段（互卦）', s: '互卦是' + TRIGRAM[huLoKey].name + '下' + TRIGRAM[huUpKey].name + '上，管事情进行到一半时的波折。它跟体卦' + rh.t + '，' + rh.say });
+  out.push({ t: (tiQi ? '五' : '四') + '、最后落点（变卦）', s: '用卦最后变成' + TRIGRAM[bianYongKey].name + '（' + wxOf(bianYongKey) + '），' + rb.t + '，' + rb.say + '——这就是整件事最终的走向。' });
+  out.push({ t: (tiQi ? '六' : '五') + '、快慢（应期）', s: '动爻在' + (dongInLower ? '内卦（初到三爻），事近、应得早' : '外卦（四到上爻），事远、应得迟') + '；再合卦气旺衰：体卦当令则快，失令则慢。远应年、月，近应日、时。' });
   const score = r.good * 2 + rb.good * 2 + rh.good;
   let concl;
-  if (score >= 12) concl = '通盘看，体强用弱、生扶有力，是成事之象。';
-  else if (score >= 8) concl = '通盘看，吉凶参半而偏顺，事可成但须用力。';
-  else if (score >= 5) concl = '通盘看，耗多得少，宜守不宜进，缓则有转机。';
-  else concl = '通盘看，体受制而无援，此事阻力大，宜暂停另图。';
-  out.push({ t: (tiQi ? '七' : '六') + '、总断', s: concl + '梅花之法，卦为骨、象为肉；再合当时所见所闻的「外应」，方为完卦。' });
+  if (score >= 12) concl = '通盘看，你这头强、对方弱，又有生扶，是能成的事。';
+  else if (score >= 8) concl = '通盘看，有吉有凶但偏顺，事能成，就是得花力气。';
+  else if (score >= 5) concl = '通盘看，付出多、收获少，宜守不宜进，缓一缓转机就来了。';
+  else concl = '通盘看，你这头受制又没帮手，阻力大，先停一停、换个法子。';
+  out.push({ t: (tiQi ? '七' : '六') + '、总断', s: concl + '梅花这法子，卦是骨架、象是血肉；再把起卦当时看到的、听到的「外应」合进来，才算看全。' });
   return out;
 }
 // 由体用还原上下卦（judge 内用于应期表述）
@@ -236,12 +230,13 @@ export const WAIYING = [
   { k: '声音', v: '所闻声之远近、清浊，清亮主吉，嘶哑主滞。' }
 ];
 
-// 把体用结果与「所问之事」用白话挂钩
+// 把体用结果与「所问之事」用白话挂钩（无问题时也给出总览）
 export function tailor(question, r) {
-  if (!question) return '';
   const rel = r.rel;
-  let s = '你问的是「' + question + '」。起得本卦' + r.ben.name +
-    '（上' + TRIGRAM[r.ben.upKey].name + '下' + TRIGRAM[r.ben.loKey].name + '），动第' + r.dong + '爻。';
+  let s = '';
+  if (question) s += '你问的是「' + question + '」。';
+  else s += '（没填所问之事，先给个总览；填上问题，解读会更准。）';
+  s += '起得本卦' + r.ben.name + '（上' + TRIGRAM[r.ben.upKey].name + '下' + TRIGRAM[r.ben.loKey].name + '），动第' + r.dong + '爻。';
   s += '体卦为' + r.ti.name + '（' + r.ti.wx + '，代表你 / 事情主体），用卦为' + r.yong.name +
     '（' + r.yong.wx + '，代表所占之事）。二者关系为【' + rel.t + '】——' + rel.say;
   if (r.tiQi) s += '卦气上，体卦于' + r.tiQi.s + '为【' + r.tiQi.v + '】' + (r.yongQi ? '，用卦为【' + r.yongQi.v + '】' : '') + '。';
@@ -290,23 +285,22 @@ export function categorical(question, r) {
   const c = pickCate(question);
   if (!c) return null;
   const rel = r.rel;
-  let s = '此问属【' + c.name + '】。体卦为' + r.ti.name + '（' + r.ti.wx + '，为"我/事主"），用卦为' + r.yong.name + '（' + r.yong.wx + '，为所占之事）。';
+  let s = '这一问归到【' + c.name + '】这一类。体卦是你（' + r.ti.name + '·' + r.ti.wx + '），用卦是这事（' + r.yong.name + '·' + r.yong.wx + '）。';
   s += c.v[rel.k] || '';
   // 卦气旺衰定应期速迟
   if (r.tiQi) {
-    if (r.tiQi.v === '旺') s += '体卦当令而旺，应事速；';
-    else if (r.tiQi.v === '相') s += '体卦次旺，事可成而稍缓；';
-    else if (r.tiQi.v === '休' || r.tiQi.v === '囚' || r.tiQi.v === '死') s += '体卦失令而衰，事迟而力弱，急则难成；';
-    else s += '体卦平气，事以中道；';
+    if (r.tiQi.v === '旺') s += '而且体卦正当时令、旺，应事快；';
+    else if (r.tiQi.v === '相') s += '体卦次旺，事能成但稍慢；';
+    else if (r.tiQi.v === '休' || r.tiQi.v === '囚' || r.tiQi.v === '死') s += '体卦失令、气弱，事来得迟、急了难成；';
+    else s += '体卦平气，按中道办；';
   }
   // 专科象意
   if (c.key === 'jiBing') {
-    const med = { li: '热药', kan: '冷药', gen: '温补', qian: '凉药', dui: '凉药', zhen: '发散', xun: '疏风', kun: '温化' };
-    s += '医药取向：生体之卦若属' + Object.keys(med).map(k => TRIGRAM[k].name).join('/') + '，可参其性味（' +
-      Object.entries(med).map(([k, v]) => TRIGRAM[k].name + '宜' + v).join('，') + '）。';
+    const med = { qian: '凉药', dui: '凉药', li: '热药', kan: '冷药', gen: '温补', kun: '温化', zhen: '发散', xun: '疏风' };
+    s += '医药取向：体卦是' + r.ti.name + '（属' + r.ti.wx + '），' + (med[r.ti.key] ? '可往「' + med[r.ti.key] + '」的方向考虑' : '随证论治') + '。';
   } else if (c.key === 'chuXing') {
-    const xiang = { 乾: '宜动、利西北', 震: '主动、防虚惊', 坤: '不动、利陆行', 艮: '不动、有阻', 巽: '宜舟行', 离: '宜陆行、防文书', 坎: '防失脱', 兑: '主纷争口舌' };
-    s += '出行象意：体卦' + r.ti.name + '，' + (xiang[r.ti.key] || '宜顺时') + '。';
+    const xiang = { qian: '宜动、利西北', zhen: '主动、防虚惊', kun: '宜静、利陆路', gen: '宜静、路上或有阻', xun: '宜走水路', li: '宜陆路、防文书麻烦', kan: '防丢东西', dui: '主口舌纷争' };
+    s += '出行象意：体卦' + r.ti.name + '，' + (xiang[r.ti.key] || '顺着时令走就稳') + '。';
   }
   return s;
 }

@@ -802,7 +802,7 @@ function meihuaHTML() {
     </div>
     <div class="card"><div class="card-title">断卦步骤</div>${r.judge.map(j=>`<p><strong>${j.t}</strong>：${j.s}</p>`).join('')}</div>
     <div class="card"><div class="card-title">三要十应 · 外应参考</div><div class="grid">${WAIYING.slice(0,6).map(w=>`<div><strong>${w.k}</strong>：${w.v}</div>`).join('')}</div></div>
-    ${st.question ? `<div class="card"><div class="card-title">白话解读（问事定向）</div><p>${esc(mhTailor(st.question, r))}</p></div>` : ''}
+    ${'<div class="card"><div class="card-title">白话解读（问事定向）</div><p>' + esc(mhTailor(st.question, r)) + '</p></div>'}
     ${st.question && mhCategorical(st.question, r) ? `<div class="card"><div class="card-title">分类占断（用体之诀）</div><p>${esc(mhCategorical(st.question, r))}</p></div>` : ''}`;
   }
   body += `</div>`;

@@ -234,11 +234,11 @@ function maXingZhi(dayZhi) {
 
 function guide(dun, ju, p, zhiFuStar, zhiShiDoor, zhiFuRawPos) {
   const arr = [];
-  arr.push('当前节气：' + p.jie.name + '，' + dun + '遁 ' + ju + ' 局。阳遁顺布，阴遁逆布。');
-  arr.push('值符星为「' + zhiFuStar + '」，随旬首所遁之仪与时干而转。' + (zhiFuRawPos === 5 ? '（旬首遁中五，天禽寄坤二，与天芮同宫）' : ''));
-  arr.push('值使门为「' + zhiShiDoor + '」，按本旬时支步数飞布。');
-  arr.push('九星为天盘，八门为人盘，八神为神盘；四盘合一，方可观事。');
-  arr.push('占断先取用神宫：求财看生门、求官看开门、问病看天芮与死门、出行看休门、婚姻看六合与休门。');
+  arr.push('这是「' + p.jie.name + '」节气下的' + dun + '遁 ' + ju + ' 局——阳遁顺布九宫、阴遁逆布九宫，方位有顺有逆，看盘时别搞反。');
+  arr.push('天盘里领头的叫值符星（' + zhiFuStar + '），它跟着旬首所遁的"仪"和时干一起转；' + (zhiFuRawPos === 5 ? '这一局旬首遁在中五宫，按规矩天禽寄到坤二宫，和天芮同宫。' : '它落定之后，全盘九星怎么转就定了。'));
+  arr.push('值使门是「' + zhiShiDoor + '」，按本旬的时辰一步步飞布，是人事那一层的主宰。');
+  arr.push('一张奇门盘分三层：天盘九星管天时、人盘八门管人事、神盘八神管神煞，三层叠在一起才看得全。');
+  arr.push('真要断事，先抓"用神"：问财看生门、求官看开门、问病看天芮与死门、出行看休门、婚姻看六合与休门——找对宫，话才好说。');
   return arr;
 }
 
@@ -408,44 +408,44 @@ export function interpret(question, res) {
     else if (y.kind === 'spirit') pos = Object.keys(res.spiritAt).find(pp => res.spiritAt[pp] && res.spiritAt[pp].name === y.name);
   }
 
-  lines.push('当前为' + res.dun + '遁 ' + res.ju + ' 局（' + res.term.name + '·' + res.yuan + '元），日干' + p.day.gz + '为"我/求测人"落' + POS_NAME[dayPos] + '宫，时干' + p.hour.gz + '为"所占之事/对方"落' + POS_NAME[hourPos] + '宫。');
+  lines.push('先说盘面底子：这是' + res.dun + '遁 ' + res.ju + ' 局（' + res.term.name + '·' + res.yuan + '元）。日干' + p.day.gz + '代表"你、求测人"，落' + POS_NAME[dayPos] + '宫；时干' + p.hour.gz + '代表"你所占的事、或对方"，落' + POS_NAME[hourPos] + '宫。');
 
   // 主用神：关键词命中则用神宫，否则以日干/时干为体用
   if (pos != null) {
     const posN = Number(pos);
     const door = res.doorAt[pos], star = res.starAt[pos], spirit = res.spiritAt[pos];
     const di = res.dipan[pos], tian = res.tianPan[pos];
-    lines.push('问「' + question + '」，用神取【' + y.label + '】（' + y.name + '）落' + POS_NAME[posN] + '宫：门【' + door.name + '·' + door.jiXiong + '】、星【' + star.name + '】、神【' + spirit.name + '】；地盘' + di + '、天盘' + tian + '。');
+    lines.push('你问的是「' + question + '」，这类事专看【' + y.label + '】用神，它落在' + POS_NAME[posN] + '宫：门是「' + door.name + '·' + door.jiXiong + '」，星是「' + star.name + '」，神是「' + spirit.name + '」；这一宫地盘坐' + di + '、天盘飞' + tian + '。');
     const dRel = doorPalaceRel(door.wx, POS_WX[posN]);
     const sSt = starState(star.wx, monthWx);
     const dJ = door.jiXiong, sJ = STAR_JI[star.name] || '平', gJ = SPIRIT_JI[spirit.name] || '平';
-    lines.push('门宫关系：' + dRel.t + '。九星于当令为【' + sSt + '】（' + (sSt === '旺' || sSt === '相' ? '得地得时、力足' : sSt === '废' || sSt === '囚' ? '失时无力' : '中和') + '）。用神宫门【' + dJ + '】、星【' + sJ + '】、神【' + gJ + '】。');
+    lines.push('门和宫合不合：' + dRel.t + '。九星看当令与否——' + star.name + '此刻是【' + sSt + '】（' + (sSt === '旺' || sSt === '相' ? '得地得时、底气足' : sSt === '废' || sSt === '囚' ? '失时没力气' : '中和平稳') + '）。这一宫门【' + dJ + '】、星【' + sJ + '】、神【' + gJ + '】。');
     const g = gejuOf(tian, di);
-    if (g) lines.push('用神宫格局：【' + g.name + '·' + g.level + '】' + g.desc);
+    if (g) lines.push('这一宫还撞上了格局：【' + g.name + '·' + g.level + '】' + g.desc);
     // 综合门/星/神/宫旺相/门宫关系/格局 定总断
     let toneWord;
-    if (dJ === '凶') toneWord = '凶象显现，宜谨慎收敛、不宜妄动';
+    if (dJ === '凶') toneWord = '凶象已经摆出来，宜收着点、别冒进';
     else {
       const menShi = (dRel.rel === '迫' || dRel.rel === '制');
       const xiongGe = g && (g.level === '凶' || g.level === '大凶');
       const jiGe = g && (g.level === '大吉' || g.level === '吉');
       if (dJ === '吉' || dJ === '大吉') {
-        if (menShi && xiongGe) toneWord = '门虽吉却遭「迫/制」失位、又临凶格，吉不就而事多阻滞，宜守不宜进';
-        else if (menShi) toneWord = '吉门被迫（吉不就），事须费力、稳中求进';
-        else if (xiongGe) toneWord = '门虽吉而临凶格，外患暗伏，成事须提防、见好就收';
-        else toneWord = '吉象明显，所谋易遂，可放手去做';
+        if (menShi && xiongGe) toneWord = '门虽吉却被"迫/制"压住了位、又临凶格，吉气接不上、事多卡顿，宜守不宜进';
+        else if (menShi) toneWord = '吉门被迫（吉不成吉），事得费力气、稳着往前走';
+        else if (xiongGe) toneWord = '门虽吉却临凶格，外头暗藏隐患，成事要提防、见好就收';
+        else toneWord = '吉象清楚，想做的事容易成，可以放手去做';
       } else {
-        if (xiongGe) toneWord = '门平而逢凶格，宜谨慎、避其方';
-        else if (jiGe) toneWord = '门平却得吉格相扶，事有转机、可图';
-        else toneWord = '吉凶参半，须合星神旺相与格局再断，稳中求进';
+        if (xiongGe) toneWord = '门平平常却撞上凶格，宜谨慎、避开那个方位';
+        else if (jiGe) toneWord = '门平却得吉格相帮，事有转机、可以图谋';
+        else toneWord = '吉凶参半，得再看星神旺相和格局才能定，先稳着走';
       }
     }
-    lines.push('【用神总断】综合门、星、神、宫旺相与门宫关系、格局，' + toneWord + '。');
+    lines.push('【用神总断】把门、星、神、宫的旺相，门宫关系，还有格局，合到一处看，' + toneWord + '。');
   } else {
-    // 未识别关键词：以日干(我)/时干(事)为体用
-    lines.push('未识别到具体事类，按奇门常法以「日干为我、时干为事」断之。');
+    // 未识别关键词：以日干(我)/时干(事)为体用，给出完整用神宫铺陈
+    lines.push('你这问题没点明是哪类事——像"问财运""问工作""问出行""问病""问婚恋"这样，系统才好替你锁定专门的用神宫。没点明也不要紧：奇门有老规矩，直接拿"日干=你本人、时干=你要问的那件事"两宫去比。');
     const r = wxRelQL(dayWx, hourWx);
-    lines.push('我（日干' + p.day.gz + '宫属' + dayWx + '）与事（时干' + p.hour.gz + '宫属' + hourWx + '）关系：【' + r.k + '】——' + r.say);
+    lines.push('日干' + p.day.gz + '（你，属' + dayWx + '）和时干' + p.hour.gz + '（事，属' + hourWx + '）比一比，关系是【' + r.k + '】——' + r.say + '。下头把"你这一宫"和"事那一宫"的门、星、神、格局都铺开给你看。');
   }
 
   // 日干(我) vs 时干(事) 体用生克（任何事都看）
@@ -453,18 +453,18 @@ export function interpret(question, res) {
     const r = wxRelQL(dayWx, hourWx);
     const dayDoor = res.doorAt[dayPos], dayStar = res.starAt[dayPos], daySpirit = res.spiritAt[dayPos];
     const hourDoor = res.doorAt[hourPos], hourStar = res.starAt[hourPos], hourSpirit = res.spiritAt[hourPos];
-    lines.push('我宫：门【' + dayDoor.name + '·' + dayDoor.jiXiong + '】星【' + dayStar.name + '】神【' + daySpirit.name + '】；事宫：门【' + hourDoor.name + '·' + hourDoor.jiXiong + '】星【' + hourStar.name + '】神【' + hourSpirit.name + '】。');
+    lines.push('你这一宫（' + POS_NAME[dayPos] + '）：门【' + dayDoor.name + '·' + dayDoor.jiXiong + '】、星【' + dayStar.name + '】、神【' + daySpirit.name + '】；事那一宫（' + POS_NAME[hourPos] + '）：门【' + hourDoor.name + '·' + hourDoor.jiXiong + '】、星【' + hourStar.name + '】、神【' + hourSpirit.name + '】。');
     const dl = doorPalaceRel(dayDoor.wx, POS_WX[dayPos]);
     const gDay = gejuOf(res.tianPan[dayPos], res.dipan[dayPos]);
     const gHour = gejuOf(res.tianPan[hourPos], res.dipan[hourPos]);
-    lines.push('我宫门宫：「' + dl.t + '」' + (gDay ? '；我宫格局【' + gDay.name + '·' + gDay.level + '】' + gDay.desc : '') + (gHour ? '；事宫格局【' + gHour.name + '·' + gHour.level + '】' + gHour.desc : ''));
-    lines.push('【体用总断】' + r.tone + (r.k === '我克' || r.k === '比和' ? '，我方占上风、事可图。' : r.k === '生我' ? '，外援来助、事易成。' : r.k === '克我' ? '，事来掣肘、宜守不宜进。' : '，我须付出心力（泄气），谋事多劳。'));
+    lines.push('你宫门和宫合不合：「' + dl.t + '」' + (gDay ? '；你宫格局【' + gDay.name + '·' + gDay.level + '】' + gDay.desc : '') + (gHour ? '；事宫格局【' + gHour.name + '·' + gHour.level + '】' + gHour.desc : ''));
+    lines.push('【体用总断】' + r.tone + (r.k === '我克' || r.k === '比和' ? '，你占上风、事可图。' : r.k === '生我' ? '，外援来帮、事易成。' : r.k === '克我' ? '，事来掣肘、宜守不宜进。' : '，你得花心力（泄气），谋事多劳。'));
   }
 
   // 显著格局提示（全盘）
   const sig = gejuScan(res).filter(x => x.level === '大吉' || x.level === '吉' || x.level === '凶' || x.level === '大凶');
   if (sig.length) {
-    lines.push('全盘格局要览：' + sig.map(x => POS_NAME[x.pos] + '宫「' + x.name + '·' + x.level + '」').join('；') + '。' + (sig.some(x => x.level === '大吉' || x.level === '吉') ? '吉格临处，宜把握其方其机；' : '') + (sig.some(x => x.level === '凶' || x.level === '大凶') ? '凶格临处，宜避其方、慎其动。' : ''));
+    lines.push('全盘格局要览：' + sig.map(x => POS_NAME[x.pos] + '宫「' + x.name + '·' + x.level + '」').join('；') + '。' + (sig.some(x => x.level === '大吉' || x.level === '吉') ? '吉格临的方位、时机，可以把握；' : '') + (sig.some(x => x.level === '凶' || x.level === '大凶') ? '凶格临的方位，宜避开、动静要慎。' : ''));
   }
 
   // 应期
@@ -472,9 +472,9 @@ export function interpret(question, res) {
   const yKong = res.kong.indexOf(res.dipan[yPos]) !== -1 || res.kong.indexOf(res.tianPan[yPos]) !== -1;
   const ma = res.maXing;
   let ying = '【应期推断】';
-  if (yKong) ying += '用神宫逢旬空（' + res.kong.join('、') + '），须待出空（出旬、填实或冲空之日月）方能应事；';
-  if (ma) ying += '日支' + p.day.zhi + '之马星在' + ma + '，主变动迅速、应期不远；';
-  ying += '又奇门以值使门（' + res.zhiShi.door + '）落宫与本局阴阳遁论迟速：阳遁顺行事近、阴遁逆行事远，远应年月、近应日时。';
+  if (yKong) ying += '用神宫逢旬空（' + res.kong.join('、') + '），得等出空——出旬、填实、或冲空的那天那月，事才会应；';
+  if (ma) ying += '日支' + p.day.zhi + '的马星在' + ma + '，主变动快、应期不远；';
+  ying += '再者奇门拿值使门（' + res.zhiShi.door + '）落宫、再结合本局阴阳遁来论快慢：阳遁顺行、事近；阴遁逆行、事远——远的应到年、月，近的应到日、时。';
   lines.push(ying);
 
   return { yong: y, lines };

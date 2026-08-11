@@ -289,27 +289,27 @@ export function wangShuai(yaoWx, monthZhi) {
   return '';
 }
 
-// 卦体断语（六冲、六合、游魂归魂、动爻多少）
+// 卦体断语（六冲、六合、游魂归魂、动爻多少）——口语化重写
 function summarize(ben, bian, p) {
   const out = [];
   const shiYao = ben.yaos[ben.shi - 1];
-  out.push('世爻在' + ben.shi + '爻（' + shiYao.qin + shiYao.zhi + shiYao.wx + '），应爻在' + ben.ying + '爻。世为求测人自身，应为对方、对面之事。');
-  if (ben.label === '游魂') out.push('本卦为游魂卦，主心神不定、走动往来、事多反复。');
-  if (ben.label === '归魂') out.push('本卦为归魂卦，主回归、收束、事有着落、外出者思归。');
+  out.push('这一卦里，代表你自己的「世爻」在第' + ben.shi + '爻（' + shiYao.qin + '·' + shiYao.zhi + shiYao.wx + '），代表对方和外部环境的「应爻」在第' + ben.ying + '爻。看事，主要就看这两爻怎么互动。');
+  if (ben.label === '游魂') out.push('这是个「游魂卦」，意思是你心里定不下来、事情反复摇摆、总想动来动去。');
+  if (ben.label === '归魂') out.push('这是个「归魂卦」，主收束、回落，事情慢慢有着落，出门在外的人也想着回来。');
   // 六冲六合卦
   const chongGua = ['乾为天', '坎为水', '艮为山', '震为雷', '巽为风', '离为火', '坤为地', '兑为泽', '天雷无妄', '雷天大壮'];
   const heGua = ['泽水困', '水泽节', '雷地豫', '地雷复', '风山渐', '山风蛊', '火山旅', '山火贲'];
-  if (chongGua.indexOf(ben.name) !== -1) out.push('本卦属六冲，主动荡、变化快、聚而复散；久病逢冲不利，谋事逢冲多不成。');
-  if (heGua.indexOf(ben.name) !== -1) out.push('本卦属六合，主和顺、缠绵、事易成而慢；病则缠绵难速愈。');
+  if (chongGua.indexOf(ben.name) !== -1) out.push('本卦是「六冲卦」，主变化快、聚了又散；久病遇冲不利，想成的事遇冲多半难成。');
+  if (heGua.indexOf(ben.name) !== -1) out.push('本卦是「六合卦」，主和顺缠绵，事情能成但慢；病的话也会拖一阵。');
   const nMove = ben.yaos.filter((y) => y.moving).length;
-  if (nMove === 0) out.push('六爻安静，事态平稳，以世应、用神旺衰断之。');
-  else if (nMove === 1) out.push('独发一爻，此爻为事之关键，最宜细看。');
-  else if (nMove >= 4) out.push('乱动之卦，头绪纷杂，宜取用神一门断之，不可眉毛胡子一把抓。');
+  if (nMove === 0) out.push('六爻都不动，局面安稳，主要看世应和用神有没有力。');
+  else if (nMove === 1) out.push('只有一爻在动，这一爻就是整件事的命门，重点看它。');
+  else if (nMove >= 4) out.push('动的爻太多（乱动），头绪乱，别什么都抓，盯住用神一门去断就行。');
   if (bian) {
-    if (bian.name === ben.name) out.push('变卦与本卦同名，为伏吟之象，主呻吟愁闷、事情原地打转。');
+    if (bian.name === ben.name) out.push('变卦和本卦同名，是「伏吟」，主闷着、原地打转、心里犯愁。');
   }
-  out.push('日辰为' + p.day.gz + '，月建为' + p.month.gz + '。日辰能冲能合、能生能克，为断卦第一提纲；月建司令一月之权。');
-  out.push('旬空为' + p.xunkong.join('、') + '，落空之爻暂时不起作用，须待出空之日方能应事。');
+  out.push('断这一卦有两个大背景：当天的「日辰」' + p.day.gz + '（最能左右一爻强弱，是头号提纲），和当月的「月建」' + p.month.gz + '（管这一个整月的气运）。');
+  out.push('这一局的「旬空」（暂时歇着不起作用）是：' + p.xunkong.join('、') + '。落在空里的爻要等出了空（出旬、被填实、或被冲）才发力。');
   return out;
 }
 
@@ -399,36 +399,36 @@ function isFanYin(benLines, bianLines) {
   return true;
 }
 
-// 应期法则：综合用神状态给出「何时应验」的多条候选（远应年月、近应日时）
+// 应期法则：综合用神状态给出「何时应验」的多条候选（远应年月、近应日时）——口语化重写
 function yingQi(ysQin, yong, res) {
   const out = [];
   const yWX = yong.wx;
   const dZhi = res.when.day.zhi;
   // 1) 用神旺相而静 → 待冲动/值日
   if ((yong.wang === '旺' || yong.wang === '相' || yong.byDay === '比助') && !yong.moving) {
-    out.push('用神得令而静，吉凶事远应年月、近应日时，待冲动或' + yWX + '之当值日/月可应。');
+    out.push('用神有劲又不动，吉凶应得慢——远则等到年、月，近则等到日、时；等它被冲动、或等' + yWX + '当值的那天/那月，就差不多到时候了。');
   }
   // 2) 与日辰相合 → 合待冲
-  if (yong.heDay) out.push('用神与日辰（' + res.when.day.gz + '）相合，须待冲去合神（' + chongZhi(dZhi) + '）之日月方应。');
+  if (yong.heDay) out.push('用神跟日辰（' + res.when.day.gz + '）合住了，要等把合神冲开（' + chongZhi(dZhi) + '）的那天/那月才应。');
   // 3) 逢日辰冲（静爻）→ 冲待合
-  if (yong.chongDay && !yong.moving) out.push('用神逢日辰冲，须待合去冲神（' + LIUHE[dZhi] + '）之日月方稳。');
+  if (yong.chongDay && !yong.moving) out.push('用神被日辰冲，要等合住冲神（' + LIUHE[dZhi] + '）的那天/那月才稳下来。');
   // 4) 旬空 → 出空
-  if (yong.kong) out.push('用神落旬空（' + res.kong.join('、') + '），须待出空（出旬、填实或冲空之日月）方能应事。');
+  if (yong.kong) out.push('用神在旬空（' + res.kong.join('、') + '），得等"出空"——出旬、被填实、或被冲空——才应事。');
   // 5) 月破 → 出月/填实/逢合
-  if (yong.poMonth) out.push('用神逢月破（冲月建之' + yong.zhi + '），目下不成；出月、填实（' + yong.zhi + '值日）或逢合之日可望转圜。');
+  if (yong.poMonth) out.push('用神逢月破（被月建冲的' + yong.zhi + '），眼下不成；等出月、等' + yong.zhi + '值日（填实）、或等合住它的那天，才有望转机。');
   // 6) 休囚无气 → 待生旺
   if (yong.wang === '休' || yong.wang === '囚' || yong.wang === '死') {
-    out.push('用神休囚无气，须待长生、帝旺或旺相之月日（生扶' + yWX + '之五行当值）方能兴起。');
+    out.push('用神没力气，得等它被生旺——等长生、帝旺、或旺相的月日（生扶' + yWX + '的五行当值）才起得来。');
   }
   // 7) 受动爻忌神克 → 制杀之期（制杀 = 能克住忌神之五行）
   const jiDong = res.ben.yaos.filter(y => y.moving && y.qin !== ysQin && KE[y.wx] === yWX);
   if (jiDong.length) {
     const zhiSha = [...new Set(jiDong.map(y => KE_INV[y.wx]))];
-    out.push('用神受动爻忌神（' + jiDong.map(y => y.zhi).join('、') + '）所克，须待"制杀"之期——即能克住忌神的五行（' + zhiSha.join('、') + '）当值之日月方解。');
+    out.push('用神被动爻忌神（' + jiDong.map(y => y.zhi).join('、') + '）克着，要等"制杀"的时机——也就是能克住那忌神的五行（' + zhiSha.join('、') + '）当值那天/那月，才解得开。');
   }
   // 8) 伏藏 → 引拔出现
-  if (yong.fu) out.push('用神伏藏待引拔，须待伏神所临之支值日、或冲去飞神之日，用神方显而应事。');
-  if (!out.length) out.push('用神中和得位，时机多在值日、值月或动爻/变爻所临地支当值之时（"远应年月，近应日时"）。');
+  if (yong.fu) out.push('用神还伏着没显，等伏神所临那支值日、或冲开压它的飞神那天，用神才出来应事。');
+  if (!out.length) out.push('用神中正得位，时机多在它值日、值月，或动爻/变爻所临地支当值之时（"远应年月，近应日时"）。');
   return out;
 }
 
@@ -448,100 +448,98 @@ export function interpret(question, res) {
   const ys = pickYongShen(question);
   const lines = [];
   if (!ys) {
-    lines.push('未识别到明确用神。可在「所问之事」里写明 财 / 工作 / 考试 / 子女 / 朋友 等关键词，系统会自动取用神并定向解读。');
+    lines.push('没识别到明确的"用神"。你在「所问之事」里带上 财 / 工作 / 考试 / 子女 / 朋友 这类词，系统就能自动锁定用神，给你定向解读。');
     return { yong: null, lines };
   }
   const ben = res.ben;
   let yong = pickYongYao(ben, ys.qin);
   const shi = ben.yaos[ben.shi - 1];
   const dayGz = res.when.day.gz, monthGz = res.when.month.gz;
-  lines.push('你问的是「' + question + '」，取【' + ys.label + '】为用神（所占之事的核心），以世爻（第' + ben.shi + '爻）为"我/求测人"。');
+  lines.push('你问的是「' + question + '」，系统把【' + ys.label + '】定为"用神"——也就是你问的那件事本身；以第' + ben.shi + '爻的世爻代表"你（求测人）"。下面就是拿你这爻和用神爻来比。');
 
   // 用神伏藏
   if (!yong) {
-    // 查伏神
     let fuYao = null;
     for (const y of ben.yaos) if (y.fu && y.fu.qin === ys.qin) { fuYao = y; break; }
     if (fuYao) {
-      lines.push('用神【' + ys.qin + '】不上本卦，伏于' + fuYao.pos + '爻之下（伏神：' + fuYao.fu.zhi + fuYao.fu.wx + '）。伏神待"冲合"或' +
-        '值日方显，所问之事目前潜藏未发，须待时机或外力引动。');
+      lines.push('这个用神没直接出现在卦面上，它"伏"在第' + fuYao.pos + '爻底下（伏神：' + fuYao.fu.zhi + fuYao.fu.wx + '）。伏着的意思是事还藏着没显，要等冲、合、或它值日那个时机被引出来才动。');
       yong = { qin: ys.qin, wx: fuYao.fu.wx, zhi: fuYao.fu.zhi, pos: fuYao.pos, fu: fuYao.fu, wang: '平', kong: false, poMonth: false, moving: false, byMonth: '', byDay: '' };
     } else {
-      lines.push('用神【' + ys.qin + '】不上卦亦无伏神，事体不显，或所问非此，宜换个角度再占。');
-      lines.push('【白话总断】用神不现，事机未明，不宜妄动，静观其变为上。');
+      lines.push('用神【' + ys.qin + '】既不上卦也无伏神，说明这件事在卦里没显现，或者你问的角度偏了，换个问法再占更准。');
+      lines.push('【白话总断】用神不现，局面不明，别急着动，先静观其变。');
       return { yong: ys, lines };
     }
   }
 
   const posTxt = yong.pos + '爻' + (yong.shi ? '（世爻）' : yong.ying ? '（应爻）' : '') + (yong.fu ? '（伏神）' : '');
-  lines.push('用神在' + posTxt + '，五行属' + yong.wx + '，' + (yong.wang || '平') + '（按月令论旺衰：旺相有气、休囚死无力）。');
+  lines.push('用神在第' + posTxt + '，五行属' + yong.wx + '，目前是【' + (yong.wang || '平') + '】——旺相就是有劲、好使；休囚死就是没力气。');
   if (yong.moving) {
-    lines.push('用神发动（为动爻），其事变化快、征兆明显，须重点看它变出之爻。');
+    lines.push('用神是动爻，说明这事变化快、信号强，重点看它变出去那一爻。');
     if (yong.bian) {
       const jt = jinTui(yong.zhi, yong.bian.zhi);
-      if (jt) lines.push('用神化【' + jt + '】（化出' + yong.bian.zhi + yong.bian.wx + '）：进神主事渐向前成、退神主事退缩消退。');
+      if (jt) lines.push('它化出【' + jt + '】（变作' + yong.bian.zhi + yong.bian.wx + '）：进神是越变越好、往前走；退神是往回缩、势头退。');
       const ht = huiTouShen(yong.wx, yong.bian.wx);
-      if (ht && ht !== '比和') lines.push('动爻化出【' + ht + '】（化出' + yong.bian.zhi + yong.bian.wx + '）：回头生则越变越好，回头克则事成而反遭其累，回头泄主付出，回头耗主损耗。');
-      else if (!jt) lines.push('用神化出' + yong.bian.zhi + yong.bian.wx + '（比和），事态平转、无大起落。');
+      if (ht && ht !== '比和') lines.push('变爻回过头来【' + ht + '】它（变作' + yong.bian.zhi + yong.bian.wx + '）：回头生是越变越旺，回头克是成了反被它拖累，回头泄是你要付出，回头耗是你要损耗。');
+      else if (!jt) lines.push('它化出' + yong.bian.zhi + yong.bian.wx + '（比和），平平稳稳转、没大起落。');
     }
   }
-  if (yong.kong) lines.push('用神落旬空（' + res.kong.join('、') + '），暂时不起作用，须待出空（冲空、填实之日）方能应事。');
-  if (yong.poMonth) lines.push('用神逢月破（冲月建之支），气散无力，所谋多难成，宜缓图或另谋。');
-  if (yong.fu) lines.push('用神为伏神，须待引拔（冲、合、值日）方显其力。');
+  if (yong.kong) lines.push('用神落在"旬空"（' + res.kong.join('、') + '），等于暂时歇着没发力，要等出空（被冲、被填实）才应事。');
+  if (yong.poMonth) lines.push('用神"逢月破"（被月建冲），气散了使不上劲，想成的事多半难成，宜缓一缓或换路子。');
+  if (yong.fu) lines.push('用神是伏神，得等被引拔（冲、合、值日）才显出力量。');
 
   // 世用生克
   const r = wxRel(shi.wx, yong.wx);
-  lines.push('世爻属' + shi.wx + '，与用神关系为【' + (r.k || '不类') + '】——' + (r.say || '') + '。');
+  lines.push('你（世爻·' + shi.wx + '）和这事（用神·' + yong.wx + '）的关系是【' + (r.k || '不类') + '】——' + (r.say || '') + '。');
 
   // 原神 / 忌神
-  const yuanWx = SHENG_INV[yong.wx];   // 生用神者（原神）
-  const jiWx = KE_INV[yong.wx];        // 克用神者（忌神）
+  const yuanWx = SHENG_INV[yong.wx];
+  const jiWx = KE_INV[yong.wx];
   const yuanYaos = ben.yaos.filter(y => y.wx === yuanWx && y.qin !== ys.qin);
   const jiYaos = ben.yaos.filter(y => y.wx === jiWx && y.qin !== ys.qin);
   const yuanDong = yuanYaos.find(y => y.moving);
   const jiDong = jiYaos.find(y => y.moving);
   if (yuanYaos.length) {
     const w = yuanYaos.map(y => y.wang).join('、');
-    lines.push('原神（生用神的' + yuanWx + '）在' + yuanYaos.map(y => y.pos + '爻').join('、') + '，' + (w || '平') +
-      (yuanDong ? '，且原神发动来生助用神，吉上加吉' : '。原神有力则用神有源。'));
+    lines.push('生用神的"原神"（属' + yuanWx + '）在第' + yuanYaos.map(y => y.pos + '爻').join('、') + '，' + (w || '平') +
+      (yuanDong ? '，而且原神在动、主动来生助用神，是吉上加吉' : '。原神有气，用神就有源头，不算孤。'));
+  } else {
+    lines.push('卦里没有明显来生用神的"原神"，用神少了一层外力帮衬，成事更靠你自己发力或等时机。');
   }
   if (jiYaos.length) {
     const w = jiYaos.map(y => y.wang).join('、');
-    lines.push('忌神（克用神的' + jiWx + '）在' + jiYaos.map(y => y.pos + '爻').join('、') + '，' + (w || '平') +
-      (jiDong ? '，且忌神发动来克害用神，须防阻碍、宜化解' : '。忌神受制则凶不成。'));
+    lines.push('克用神的"忌神"（属' + jiWx + '）在第' + jiYaos.map(y => y.pos + '爻').join('、') + '，' + (w || '平') +
+      (jiDong ? '，而且忌神在动、主动来克害用神，要提防阻碍、最好先化解' : '。忌神要是被制住，凶也成不了气候。'));
   } else {
-    lines.push('卦中无明现忌神克用，外扰较少。');
+    lines.push('卦里没有明摆着的忌神来克用神，外头的干扰不多。');
   }
 
   // 日辰旺衰（断卦第一提纲）
   const de = dayEffect(yong, res.when.day.zhi);
-  if (de.bi) lines.push('用神临日辰（' + dayGz + '），如日中天、极旺有力，凡事多可倚仗。');
-  else if (de.sheng) lines.push('日辰（' + dayGz + '）生扶用神，如久旱得雨，化险为夷、事得助力。');
-  else if (de.ke) lines.push('日辰（' + dayGz + '）克伤用神，雪上加霜，须防外力压制。');
-  if (de.anDong) lines.push('用神得日辰冲起为「暗动」——静中生动，事有突发之兆，反得其力。');
-  if (de.riPo) lines.push('用神休囚又被日辰冲破，为「日破」，爻破而无用，谋事难成。');
-  if (de.chongKong) lines.push('用神旬空逢日辰冲起，为「冲空则实」，出空而应、事可发动。');
+  if (de.bi) lines.push('用神"临日辰"（' + dayGz + '），就像正当正午的太阳，最旺最有劲，这事多半能倚仗。');
+  else if (de.sheng) lines.push('当天的"日辰"（' + dayGz + '）在生扶用神，像旱天降甘霖，化险为夷、有人帮一把。');
+  else if (de.ke) lines.push('"日辰"（' + dayGz + '）在克用神，雪上加霜，要防外面有人压你。');
+  if (de.anDong) lines.push('用神被日辰冲起，是"暗动"——静里生动，忽然有苗头，反而借上力。');
+  if (de.riPo) lines.push('用神本来就没力气、又被日辰冲破，叫"日破"，这爻破了没用，谋事难成。');
+  if (de.chongKong) lines.push('用神空着、又被日辰冲，是"冲空则实"，一出空就发动、事能起来。');
 
   // 入墓
   if (muZhi(yong.wx) && yong.zhi === muZhi(yong.wx)) {
-    lines.push('用神入墓库（' + yong.zhi + '，' + yong.wx + '之墓），事被掩藏，须待冲墓、出墓之日方显其力。');
+    lines.push('用神"入墓"（' + yong.zhi + '，是' + yong.wx + '的墓库），事被捂住了，要等冲墓、出墓那天才显力。');
   }
 
   // 反吟
   if (isFanYin(res.ben.lines, res.bian ? res.bian.lines : null)) {
-    lines.push('本卦变卦六爻阴阳全反，为「反吟」之象，主反复颠倒、事多不宁、进寸退尺。');
+    lines.push('本卦和变卦六爻全反过来，是"反吟"，主反复颠倒、进两步退一步、心里不踏实。');
   }
 
-  // 日辰月建提纲
-  lines.push('提纲：日辰' + dayGz + '（能冲能合、能生能克，断卦第一枢纽）、月建' + monthGz +
-    '（司令一月之权）。二者生扶用神则事成，克伤用神则事阻。');
+  // 提纲
+  lines.push('两个大背景先记牢：当天"日辰"' + dayGz + '（最能左右一爻强弱，断卦的头号提纲）和当月"月建"' + monthGz + '（管整月气运）。它俩生扶用神，事就容易成；克伤用神，事就卡。');
 
   // 综合判断（书规）
   const yWang = (yong.wang === '旺' || yong.wang === '相');
   const yYou = (yong.wang === '休' || yong.wang === '囚' || yong.wang === '死');
   const yBad = yong.kong || yong.poMonth;
   const rel = r.k;
-  // 世用基本吉凶
   let tone;
   if (yBad) tone = '凶';
   else if (yYou && (rel === '克我' || rel === '我生')) tone = '凶';
@@ -554,10 +552,10 @@ export function interpret(question, res) {
   else tone = '平';
 
   let concl;
-  if (tone === '吉') concl = '综合看，用神得令、与世爻相生或相比，原神有气而忌神不张，此事可成，宜积极把握。';
-  else if (tone === '平偏吉') concl = '综合看，用神中和、你须主动用力（我克为得、比和主稳），事可成但非唾手，稳步推进即可。';
-  else if (tone === '平') concl = '综合看，用神不弱不强，需你付出心力（世生用神主耗），成败在人谋，踏实为之。';
-  else concl = '综合看，用神受制、落空破或遭忌神动克，此事阻力较大，宜守不宜进，或待出空、过月、原神得力之时再图。';
+  if (tone === '吉') concl = '综合看，用神得令、跟你（世爻）相生或比和，原神有气、忌神没张狂，这事能成，放胆去抓。';
+  else if (tone === '平偏吉') concl = '综合看，用神不算弱，你得出点力（我克是拿得住、比和是稳），事能成但不轻松，稳着推就行。';
+  else if (tone === '平') concl = '综合看，用神不软不硬，得你花心思（世生用神是你在付出），成不成看人谋，踏实干。';
+  else concl = '综合看，用神受制、落空或破、或遭忌神动克，阻力不小，宜守不宜攻，等出空、过月、原神得力时再动。';
   lines.push('【白话总断】' + concl);
 
   // 应期（何时应验）——算卦先生必给
