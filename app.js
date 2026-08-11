@@ -3,8 +3,8 @@ import { TRIGRAM, HEX, cast, search, combine, allTrigrams, sampleWords, UNITS, B
 import * as store from './store.js';
 import { fourPillars, GAN, ZHI, SHICHEN, hourZhiIndex, lunarDate } from './calendar.js';
 import { paipan as liuPaipan, tossSix, YONGSHEN, LIUSHEN, interpret as liuInterpret } from './liuyao.js';
-import { byTime as mhByTime, byNumbers as mhByNumbers, byChars as mhByChars, byRandom as mhByRandom, WAIYING, hexOf as mhHexOf, tailor as mhTailor } from './meihua.js';
-import { paipan as qmPaipan, nowPaipan as qmNowPaipan, POS_NAME, RING, interpret as qmInterpret } from './qimen.js';
+import { byTime as mhByTime, byNumbers as mhByNumbers, byChars as mhByChars, byRandom as mhByRandom, WAIYING, hexOf as mhHexOf, tailor as mhTailor, categorical as mhCategorical } from './meihua.js';
+import { paipan as qmPaipan, nowPaipan as qmNowPaipan, POS_NAME, RING, interpret as qmInterpret, gejuScan as qmGejuScan } from './qimen.js';
 
 const app = document.getElementById('app');
 const navToggle = document.querySelector('.nav-toggle');
@@ -798,7 +798,8 @@ function meihuaHTML() {
     </div>
     <div class="card"><div class="card-title">断卦步骤</div>${r.judge.map(j=>`<p><strong>${j.t}</strong>：${j.s}</p>`).join('')}</div>
     <div class="card"><div class="card-title">三要十应 · 外应参考</div><div class="grid">${WAIYING.slice(0,6).map(w=>`<div><strong>${w.k}</strong>：${w.v}</div>`).join('')}</div></div>
-    ${st.question ? `<div class="card"><div class="card-title">白话解读（问事定向）</div><p>${esc(mhTailor(st.question, r))}</p></div>` : ''}`;
+    ${st.question ? `<div class="card"><div class="card-title">白话解读（问事定向）</div><p>${esc(mhTailor(st.question, r))}</p></div>` : ''}
+    ${st.question && mhCategorical(st.question, r) ? `<div class="card"><div class="card-title">分类占断（用体之诀）</div><p>${esc(mhCategorical(st.question, r))}</p></div>` : ''}`;
   }
   body += `</div>`;
   return body;
@@ -867,7 +868,8 @@ function qimenHTML() {
       <div class="subtitle">值符${r.zhiFu.star}（遁${r.zhiFu.yi}）落${POS_NAME[r.zhiFu.starAt]} · 值使${r.zhiShi.door}落${POS_NAME[r.zhiShi.pos]}</div>
     </div>
     <div class="qimen-board">${cells}</div>
-    <div class="card"><div class="card-title">占断要点</div>${r.tip.map(t=>`<p>${esc(t)}</p>`).join('')}</div>`;
+    <div class="card"><div class="card-title">占断要点</div>${r.tip.map(t=>`<p>${esc(t)}</p>`).join('')}</div>
+    <div class="card"><div class="card-title">十干克应格局</div>${qmGejuScan(r).map(g=>`<p><strong>${POS_NAME[g.pos]}宫 ${g.up}＋${g.down} → ${g.name}·${g.level}</strong>：${esc(g.desc)}</p>`).join('') || '<p>本局各宫无显著吉凶格局。</p>'}</div>`;
   const qir = qmInterpret(r.question, r);
   if (qir) {
     body += `<div class="card"><div class="card-title">白话解读（问事定向）${qir.yong ? ` · 用神：${qir.yong.label}` : ''}</div>${qir.lines.map(s=>`<p>${esc(s)}</p>`).join('')}</div>`;

@@ -2,7 +2,7 @@
 // 四盘：地盘、天盘（九星）、人盘（八门）、神盘（八神）。
 // 参考《奇门遁甲入门讲义》体例。
 
-import { fourPillars, currentTerm, xunInfo, jdToLocalDate } from './calendar.js';
+import { fourPillars, currentTerm, xunInfo, jdToLocalDate, ZHI, ZHI_WX } from './calendar.js';
 
 /* ============ 常量 ============ */
 export const YI = ['戊', '己', '庚', '辛', '壬', '癸', '丁', '丙', '乙']; // 三奇六仪顺布序列
@@ -245,6 +245,9 @@ function guide(dun, ju, p, zhiFuStar, zhiShiDoor, zhiFuRawPos) {
 /* ============ 用神定向 · 问事白话解读 ============ */
 const STAR_JI = { 天辅: '吉', 天心: '吉', 天任: '吉', 天禽: '吉', 天冲: '平', 天英: '平', 天蓬: '凶', 天芮: '凶', 天柱: '凶' };
 const SPIRIT_JI = { 值符: '吉', 六合: '吉', 太阴: '吉', 九地: '吉', 九天: '吉', 腾蛇: '凶', 白虎: '凶', 玄武: '凶' };
+const POS_WX = { 1: '水', 2: '土', 3: '木', 4: '木', 5: '土', 6: '金', 7: '金', 8: '土', 9: '火' };
+const SHENG = { 金: '水', 水: '木', 木: '火', 火: '土', 土: '金' };
+const KE = { 金: '木', 木: '土', 土: '水', 水: '火', 火: '金' };
 
 // 依问题关键词取用神宫类型
 export function pickYong(q) {
@@ -259,35 +262,232 @@ export function pickYong(q) {
   return null;
 }
 
-// 依据问题解读用神宫（白话）
+// 天盘干 + 地盘干 → 十干克应格局（奇门灵魂）
+const GEJU_LIST = [
+  ['戊', '丙', '青龙返首', '大吉', '戊加丙，青龙返首，谋为皆吉、所求必遂，出兵兴师诸事大吉。'],
+  ['戊', '乙', '青龙合会', '平', '戊加乙，青龙合会，门吉事吉、门凶事凶。'],
+  ['戊', '丁', '青龙耀明', '吉', '戊加丁，青龙耀明，宜谒贵求名，恐招惹是非。'],
+  ['戊', '己', '贵人入狱', '凶', '戊加己，贵人入狱，公私不利、屈抑难伸。'],
+  ['戊', '庚', '值符飞宫', '凶', '戊加庚，值符飞宫，吉事不吉、凶事更凶，须换地方。'],
+  ['戊', '辛', '青龙折足', '凶', '戊加辛，青龙折足，招灾、足疾，静守则免。'],
+  ['戊', '壬', '青龙入天牢', '凶', '戊加壬，青龙入天牢，凡谋不利。'],
+  ['戊', '癸', '青龙华盖', '平', '戊加癸，青龙华盖，门吉事吉、门凶事凶，宜避灾。'],
+  ['戊', '戊', '伏吟', '凶', '戊加戊，伏吟（双木成林），凡事闭塞、只宜静守。'],
+  ['乙', '丙', '奇仪顺遂', '吉', '乙加丙，奇仪顺遂，星吉迁官晋职、星凶夫妻离别。'],
+  ['乙', '丁', '奇仪相佐', '吉', '乙加丁，奇仪相佐，文书事吉、出行有喜。'],
+  ['乙', '戊', '阴害阳门', '凶', '乙加戊，阴害阳门，利阴害阳，门凶被迫。'],
+  ['乙', '己', '日奇入墓', '凶', '乙加己，日奇入墓，门凶事凶。'],
+  ['乙', '庚', '日奇被刑', '凶', '乙加庚，日奇被刑，争讼财产、夫妻怀私。'],
+  ['乙', '辛', '青龙逃走', '凶', '乙加辛，青龙逃走，奴仆拐带、六畜走失，百事凶。'],
+  ['乙', '壬', '日奇入地', '凶', '乙加壬，日奇入地，尊卑悖乱、官讼、有人谋害。'],
+  ['乙', '癸', '日奇入地网', '凶', '乙加癸，日奇入地网，宜遁迹隐避。'],
+  ['乙', '乙', '日奇伏吟', '凶', '乙加乙，日奇伏吟，不宜见上层、只宜安分。'],
+  ['丙', '戊', '飞鸟跌穴', '大吉', '丙加戊，飞鸟跌穴，百事吉利、诸谋皆成。'],
+  ['丙', '乙', '日月并行', '吉', '丙加乙，日月并行，公私谋为皆利。'],
+  ['丙', '丁', '月奇朱雀', '吉', '丙加丁，月奇朱雀，贵人文书吉，常生口舌。'],
+  ['丙', '己', '火孛入刑', '凶', '丙加己，火孛入刑，囚人必得、盗贼必获，占事不利。'],
+  ['丙', '庚', '荧入太白', '凶', '丙加庚，荧入太白（火入金乡），利主、贼自退，为客进败。'],
+  ['丙', '辛', '谋事就成', '吉', '丙加辛，谋事就成，占病不愈、占事就。'],
+  ['丙', '壬', '火入天罗', '凶', '丙加壬，火入天罗，为客不利、是非缠绕。'],
+  ['丙', '癸', '月奇入地网', '凶', '丙加癸，月奇入地网，阴人害事、灾祸。'],
+  ['丙', '丙', '月奇悖师', '凶', '丙加丙，月奇悖师，文书逼迫、破耗遗失。'],
+  ['丁', '戊', '青龙转光', '吉', '丁加戊，青龙转光，官人升迁、常人威崇。'],
+  ['丁', '乙', '人遁吉格', '吉', '丁加乙，人遁吉格，贵人加官进爵、常人婚财。'],
+  ['丁', '丙', '星随月转', '吉', '丁加丙，星随月转，贵人越级、凶事化解。'],
+  ['丁', '己', '火入勾陈', '凶', '丁加己，火入勾陈，奸私仇冤、事因女人。'],
+  ['丁', '庚', '文书阻隔', '凶', '丁加庚，文书阻隔，行人必归、占讼刑罪。'],
+  ['丁', '辛', '朱雀入狱', '凶', '丁加辛，朱雀入狱（罪人失囚），罪人释而官人失位。'],
+  ['丁', '壬', '五神互合', '吉', '丁加壬，五神互合，贵人思诏、讼狱公平。'],
+  ['丁', '癸', '朱雀投江', '凶', '丁加癸，朱雀投江，百事皆凶、文书口舌沉溺。'],
+  ['丁', '丁', '奇入太阴', '吉', '丁加丁，奇入太阴，文书喜庆、凡事乘心。'],
+  ['己', '戊', '犬遇青龙', '吉', '己加戊，犬遇青龙，门吉谋望遂、门凶枉劳。'],
+  ['己', '乙', '墓神不明', '凶', '己加乙，墓神不明，地户逢星，宜隐遁。'],
+  ['己', '丙', '火孛地户', '凶', '己加丙，火孛地户，阳人冤事、男遭刑。'],
+  ['己', '丁', '朱雀入墓', '凶', '己加丁，朱雀入墓，词讼凶、先曲后直。'],
+  ['己', '庚', '刑格返名', '凶', '己加庚，刑格返名，讼病凶、谋事破耗。'],
+  ['己', '辛', '游魂入墓', '凶', '己加辛，游魂入墓，小人作祟、凶。'],
+  ['己', '壬', '地网高张', '凶', '己加壬，地网高张，狡童佚女、凶。'],
+  ['己', '癸', '地刑玄武', '凶', '己加癸，地刑玄武，病危、官讼、内丑。'],
+  ['己', '己', '地户逢鬼', '凶', '己加己，地户逢鬼，病凶、谋事凶。'],
+  ['庚', '戊', '太白伏宫', '凶', '庚加戊，太白伏宫（伏宫格），百事不可、谋为凶。'],
+  ['庚', '乙', '太白逢星', '凶', '庚加乙，太白逢星，退吉进凶、谋为不利。'],
+  ['庚', '丙', '太白入荧', '凶', '庚加丙，太白入荧（白入荧），利客、贼来，宜伏击。'],
+  ['庚', '丁', '亭亭之格', '凶', '庚加丁，亭亭之格，因私匿、文书阻隔。'],
+  ['庚', '己', '刑格', '凶', '庚加己，刑格，官司被刑、破财疾病。'],
+  ['庚', '庚', '太白同宫', '凶', '庚加庚，太白同宫（战格），官灾横祸。'],
+  ['庚', '辛', '白虎干格', '凶', '庚加辛，白虎干格，远行失道、多凶。'],
+  ['庚', '壬', '上格', '凶', '庚加壬，上格（小格），迷途破财得病。'],
+  ['庚', '癸', '大格', '凶', '庚加癸，大格，百事凶、求人不在、出行车破马死。'],
+  ['辛', '戊', '困龙被伤', '凶', '辛加戊，困龙被伤，官司破财、屈抑守分。'],
+  ['辛', '乙', '白虎猖狂', '凶', '辛加乙，白虎猖狂，家败人亡、远行多殃、婚凶。'],
+  ['辛', '丙', '干合悖师', '凶', '辛加丙，干合悖师，误入陷阱、刑禁。'],
+  ['辛', '丁', '狱神得奇', '吉', '辛加丁，狱神得奇，经商获倍利、囚人赦。'],
+  ['辛', '己', '入狱自刑', '凶', '辛加己，入狱自刑，奴仆遭刑、凶。'],
+  ['辛', '庚', '白虎出力', '凶', '辛加庚，白虎出力，刀刃血光、凶。'],
+  ['辛', '壬', '凶蛇入狱', '凶', '辛加壬，凶蛇入狱，两男争女、诉讼。'],
+  ['辛', '癸', '天牢华盖', '凶', '辛加癸，天牢华盖，误入天网、动止乖张。'],
+  ['壬', '戊', '小蛇化龙', '吉', '壬加戊，小蛇化龙，男人发达、女产婴童。'],
+  ['壬', '乙', '日入天罗', '凶', '壬加乙，日入天罗，仕途暗昧、祸端。'],
+  ['壬', '丙', '水蛇入火', '凶', '壬加丙，水蛇入火，官灾刑禁、络绎不绝。'],
+  ['壬', '丁', '干合蛇刑', '凶', '壬加丁，干合蛇刑，文书牵连、贵人匆匆。'],
+  ['壬', '己', '反吟蛇刑', '凶', '壬加己，反吟蛇刑，官司败诉、破财。'],
+  ['壬', '庚', '太白擒蛇', '平', '壬加庚，太白擒蛇，刑狱公平、私谋不成。'],
+  ['壬', '辛', '腾蛇相缠', '凶', '壬加辛，腾蛇相缠，纵奇门亦凶、纠缠。'],
+  ['壬', '壬', '蛇入地罗', '凶', '壬加壬，蛇入地罗（伏吟），内忧外患。'],
+  ['壬', '癸', '幼女奸淫', '凶', '壬加癸，幼女奸淫，家丑、凡事暗昧。'],
+  ['癸', '戊', '天乙会合', '吉', '癸加戊，天乙会合，婚成、人谋利，门凶反祸。'],
+  ['癸', '乙', '华盖逢星', '吉', '癸加乙，华盖逢星，贵人禄位、常人平安。'],
+  ['癸', '丙', '华盖悖师', '凶', '癸加丙，华盖悖师，贵贱不分、小人乖张。'],
+  ['癸', '丁', '腾蛇夭矫', '凶', '癸加丁，腾蛇夭矫，百事不利、虚惊怪异。'],
+  ['癸', '己', '华盖地户', '凶', '癸加己，华盖地户，男女狱讼、凶。'],
+  ['癸', '庚', '太白入网', '凶', '癸加庚，太白入网，冤诬、自屈。'],
+  ['癸', '辛', '网盖天牢', '凶', '癸加辛，网盖天牢，讼病凶、无救。'],
+  ['癸', '壬', '复见腾蛇', '凶', '癸加壬，复见腾蛇，凡事不利、灾患。'],
+  ['癸', '癸', '天网四张', '凶', '癸加癸，天网四张（伏吟），行人失伴、病讼凶。']
+];
+const GEJU = {};
+for (const [u, l, name, level, desc] of GEJU_LIST) {
+  (GEJU[u] = GEJU[u] || {})[l] = { name, level, desc };
+}
+function gejuOf(upper, lower) {
+  return (GEJU[upper] && GEJU[upper][lower]) || null;
+}
+
+// 扫描全盘格局，返回有名称的格局（按吉凶排序）
+export function gejuScan(res) {
+  const out = [];
+  for (let pos = 1; pos <= 9; pos++) {
+    if (pos === 5) continue;
+    const g = gejuOf(res.tianPan[pos], res.dipan[pos]);
+    if (g) out.push({ pos, posName: POS_NAME[pos], up: res.tianPan[pos], down: res.dipan[pos], ...g });
+  }
+  const order = { 大吉: 0, 吉: 1, 平: 2, 凶: 3, 大凶: 4 };
+  return out.sort((a, b) => (order[a.level] || 2) - (order[b.level] || 2));
+}
+
+// 门宫关系：门生宫=和、宫生门=义、门克宫=迫、宫克门=制、比和
+function doorPalaceRel(menWx, posWx) {
+  if (SHENG[menWx] === posWx) return { rel: '和', t: '门生宫为「和」，吉门更吉、凶门减凶' };
+  if (SHENG[posWx] === menWx) return { rel: '义', t: '宫生门为「义」，门得庇护而力增' };
+  if (KE[menWx] === posWx) return { rel: '迫', t: '门克宫为「迫」（被迫），吉门吉不就、凶门事更凶' };
+  if (KE[posWx] === menWx) return { rel: '制', t: '宫克门为「制」（受制），吉门受制不吉、凶门受制不起' };
+  return { rel: '比', t: '门宫比和，力专' };
+}
+// 九星旺相休囚废（依月令五行）
+function starState(starWx, monthWx) {
+  if (starWx === monthWx) return '旺';
+  if (SHENG[monthWx] === starWx) return '相';
+  if (SHENG[starWx] === monthWx) return '休';
+  if (KE[starWx] === monthWx) return '囚';
+  if (KE[monthWx] === starWx) return '废';
+  return '平';
+}
+function posOfGan(map, gan) {
+  for (let pos = 1; pos <= 9; pos++) if (map[pos] === gan) return pos;
+  return null;
+}
+
+// 依据问题解读用神宫（白话，含格局/星门旺相/日干时干/应期）
 export function interpret(question, res) {
-  const y = pickYong(question);
+  const p = res.when;
+  const monthWx = ZHI_WX[ZHI.indexOf(p.month.zhi)];
   const lines = [];
-  if (!y) {
-    lines.push('未识别到明确用神。可在「所问之事」写明 财 / 工作 / 病 / 出行 / 婚姻 / 官司 / 考试 等，系统会取对应用神宫解读。');
-    return { yong: null, lines };
-  }
+  // 我（日干）与 事（时干）落宫（甲日/甲时遁于值符/值使，落其同宫）
+  const dayPos0 = posOfGan(res.tianPan, p.day.gan);
+  const hourPos0 = posOfGan(res.tianPan, p.hour.gan);
+  const dayPos = dayPos0 || res.zhiFu.starAt;
+  const hourPos = hourPos0 || res.zhiShi.pos;
+  const dayWx = dayPos ? POS_WX[dayPos] : null;
+  const hourWx = hourPos ? POS_WX[hourPos] : null;
+
+  const y = pickYong(question);
   let pos = null;
-  if (y.kind === 'door') pos = Object.keys(res.doorAt).find(p => res.doorAt[p] && res.doorAt[p].name === y.name);
-  else if (y.kind === 'star') pos = Object.keys(res.starAt).find(p => res.starAt[p] && res.starAt[p].name === y.name);
-  else if (y.kind === 'spirit') pos = Object.keys(res.spiritAt).find(p => res.spiritAt[p] && res.spiritAt[p].name === y.name);
-  if (pos == null) {
-    lines.push('用神【' + y.label + '】未在盘中找到对应宫位，请换个问法重试。');
-    return { yong: y, lines };
+  if (y) {
+    if (y.kind === 'door') pos = Object.keys(res.doorAt).find(pp => res.doorAt[pp] && res.doorAt[pp].name === y.name);
+    else if (y.kind === 'star') pos = Object.keys(res.starAt).find(pp => res.starAt[pp] && res.starAt[pp].name === y.name);
+    else if (y.kind === 'spirit') pos = Object.keys(res.spiritAt).find(pp => res.spiritAt[pp] && res.spiritAt[pp].name === y.name);
   }
-  const posN = Number(pos);
-  const door = res.doorAt[pos], star = res.starAt[pos], spirit = res.spiritAt[pos];
-  const di = res.dipan[pos], tian = res.tianPan[pos];
-  lines.push('你问的是「' + question + '」，用神取【' + y.label + '】（' + y.name + '）。');
-  lines.push(y.name + '落' + POS_NAME[posN] + '宫：门为【' + door.name + '·' + door.jiXiong + '】，星为【' + star.name + '】，神为【' + spirit.name + '】；地盘' + di + '、天盘' + tian + '。');
-  const dJ = door.jiXiong, sJ = STAR_JI[star.name] || '平', gJ = SPIRIT_JI[spirit.name] || '平';
-  lines.push('白话：用神宫门属【' + dJ + '】、星属【' + sJ + '】、神属【' + gJ + '】。门' + door.desc + '；星' + star.desc + '。');
-  let tone;
-  if (dJ === '大吉' || dJ === '吉') tone = '吉象明显，所谋易遂，可放手去做';
-  else if (dJ === '凶') tone = '凶象显现，宜谨慎收敛、不宜妄动';
-  else tone = '吉凶参半，需结合星神与日月旺衰综合判断，稳中求进';
-  lines.push('【白话总断】综合用神宫的「门、星、神」看，' + tone + '。奇门重「用神」，以上仅为核心判断，实际占断还须看用神是否得令、是否空亡入墓。');
+
+  lines.push('当前为' + res.dun + '遁 ' + res.ju + ' 局（' + res.term.name + '·' + res.yuan + '元），日干' + p.day.gz + '为"我/求测人"落' + POS_NAME[dayPos] + '宫，时干' + p.hour.gz + '为"所占之事/对方"落' + POS_NAME[hourPos] + '宫。');
+
+  // 主用神：关键词命中则用神宫，否则以日干/时干为体用
+  if (pos != null) {
+    const posN = Number(pos);
+    const door = res.doorAt[pos], star = res.starAt[pos], spirit = res.spiritAt[pos];
+    const di = res.dipan[pos], tian = res.tianPan[pos];
+    lines.push('问「' + question + '」，用神取【' + y.label + '】（' + y.name + '）落' + POS_NAME[posN] + '宫：门【' + door.name + '·' + door.jiXiong + '】、星【' + star.name + '】、神【' + spirit.name + '】；地盘' + di + '、天盘' + tian + '。');
+    const dRel = doorPalaceRel(door.wx, POS_WX[posN]);
+    const sSt = starState(star.wx, monthWx);
+    const dJ = door.jiXiong, sJ = STAR_JI[star.name] || '平', gJ = SPIRIT_JI[spirit.name] || '平';
+    lines.push('门宫关系：' + dRel.t + '。九星于当令为【' + sSt + '】（' + (sSt === '旺' || sSt === '相' ? '得地得时、力足' : sSt === '废' || sSt === '囚' ? '失时无力' : '中和') + '）。用神宫门【' + dJ + '】、星【' + sJ + '】、神【' + gJ + '】。');
+    const g = gejuOf(tian, di);
+    if (g) lines.push('用神宫格局：【' + g.name + '·' + g.level + '】' + g.desc);
+    // 综合门/星/神/宫旺相/门宫关系/格局 定总断
+    let toneWord;
+    if (dJ === '凶') toneWord = '凶象显现，宜谨慎收敛、不宜妄动';
+    else {
+      const menShi = (dRel.rel === '迫' || dRel.rel === '制');
+      const xiongGe = g && (g.level === '凶' || g.level === '大凶');
+      const jiGe = g && (g.level === '大吉' || g.level === '吉');
+      if (dJ === '吉' || dJ === '大吉') {
+        if (menShi && xiongGe) toneWord = '门虽吉却遭「迫/制」失位、又临凶格，吉不就而事多阻滞，宜守不宜进';
+        else if (menShi) toneWord = '吉门被迫（吉不就），事须费力、稳中求进';
+        else if (xiongGe) toneWord = '门虽吉而临凶格，外患暗伏，成事须提防、见好就收';
+        else toneWord = '吉象明显，所谋易遂，可放手去做';
+      } else {
+        if (xiongGe) toneWord = '门平而逢凶格，宜谨慎、避其方';
+        else if (jiGe) toneWord = '门平却得吉格相扶，事有转机、可图';
+        else toneWord = '吉凶参半，须合星神旺相与格局再断，稳中求进';
+      }
+    }
+    lines.push('【用神总断】综合门、星、神、宫旺相与门宫关系、格局，' + toneWord + '。');
+  } else {
+    // 未识别关键词：以日干(我)/时干(事)为体用
+    lines.push('未识别到具体事类，按奇门常法以「日干为我、时干为事」断之。');
+    const r = wxRelQL(dayWx, hourWx);
+    lines.push('我（日干' + p.day.gz + '宫属' + dayWx + '）与事（时干' + p.hour.gz + '宫属' + hourWx + '）关系：【' + r.k + '】——' + r.say);
+  }
+
+  // 日干(我) vs 时干(事) 体用生克（任何事都看）
+  if (dayWx && hourWx) {
+    const r = wxRelQL(dayWx, hourWx);
+    const dayDoor = res.doorAt[dayPos], dayStar = res.starAt[dayPos], daySpirit = res.spiritAt[dayPos];
+    const hourDoor = res.doorAt[hourPos], hourStar = res.starAt[hourPos], hourSpirit = res.spiritAt[hourPos];
+    lines.push('我宫：门【' + dayDoor.name + '·' + dayDoor.jiXiong + '】星【' + dayStar.name + '】神【' + daySpirit.name + '】；事宫：门【' + hourDoor.name + '·' + hourDoor.jiXiong + '】星【' + hourStar.name + '】神【' + hourSpirit.name + '】。');
+    const dl = doorPalaceRel(dayDoor.wx, POS_WX[dayPos]);
+    const gDay = gejuOf(res.tianPan[dayPos], res.dipan[dayPos]);
+    const gHour = gejuOf(res.tianPan[hourPos], res.dipan[hourPos]);
+    lines.push('我宫门宫：「' + dl.t + '」' + (gDay ? '；我宫格局【' + gDay.name + '·' + gDay.level + '】' + gDay.desc : '') + (gHour ? '；事宫格局【' + gHour.name + '·' + gHour.level + '】' + gHour.desc : ''));
+    lines.push('【体用总断】' + r.tone + (r.k === '我克' || r.k === '比和' ? '，我方占上风、事可图。' : r.k === '生我' ? '，外援来助、事易成。' : r.k === '克我' ? '，事来掣肘、宜守不宜进。' : '，我须付出心力（泄气），谋事多劳。'));
+  }
+
+  // 显著格局提示（全盘）
+  const sig = gejuScan(res).filter(x => x.level === '大吉' || x.level === '吉' || x.level === '凶' || x.level === '大凶');
+  if (sig.length) {
+    lines.push('全盘格局要览：' + sig.map(x => POS_NAME[x.pos] + '宫「' + x.name + '·' + x.level + '」').join('；') + '。' + (sig.some(x => x.level === '大吉' || x.level === '吉') ? '吉格临处，宜把握其方其机；' : '') + (sig.some(x => x.level === '凶' || x.level === '大凶') ? '凶格临处，宜避其方、慎其动。' : ''));
+  }
+
+  // 应期
+  const yPos = pos != null ? Number(pos) : (hourPos || dayPos);
+  const yKong = res.kong.indexOf(res.dipan[yPos]) !== -1 || res.kong.indexOf(res.tianPan[yPos]) !== -1;
+  const ma = res.maXing;
+  let ying = '【应期推断】';
+  if (yKong) ying += '用神宫逢旬空（' + res.kong.join('、') + '），须待出空（出旬、填实或冲空之日月）方能应事；';
+  if (ma) ying += '日支' + p.day.zhi + '之马星在' + ma + '，主变动迅速、应期不远；';
+  ying += '又奇门以值使门（' + res.zhiShi.door + '）落宫与本局阴阳遁论迟速：阳遁顺行事近、阴遁逆行事远，远应年月、近应日时。';
+  lines.push(ying);
+
   return { yong: y, lines };
+}
+// 五行生克关系（给日干/时干体用断用）
+function wxRelQL(fromWx, toWx) {
+  if (!fromWx || !toWx) return { k: '', say: '', tone: '' };
+  if (fromWx === toWx) return { k: '比和', say: '我事同气、彼此帮衬', tone: '平' };
+  if (SHENG[toWx] === fromWx) return { k: '生我', say: '事来生我、有人相助', tone: '吉' };
+  if (KE[fromWx] === toWx) return { k: '我克', say: '我能制事、事在掌握', tone: '吉' };
+  if (SHENG[fromWx] === toWx) return { k: '我生', say: '我去生事、出多入少', tone: '平' };
+  if (KE[toWx] === fromWx) return { k: '克我', say: '事来克我、有阻力', tone: '凶' };
+  return { k: '', say: '', tone: '' };
 }
 
 /* ============ 日期辅助 ============ */

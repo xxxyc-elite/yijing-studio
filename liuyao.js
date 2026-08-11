@@ -359,6 +359,79 @@ function jinTui(fromZhi, toZhi) {
 const SHENG_INV = { 金: '土', 木: '水', 水: '金', 火: '木', 土: '火' };
 const KE_INV = { 金: '火', 木: '金', 水: '土', 火: '水', 土: '木' };
 
+// 五行墓库：金墓丑、木墓未、水墓辰、火墓戌、土墓辰
+const MU = { 金: '丑', 木: '未', 水: '辰', 火: '戌', 土: '辰' };
+export function muZhi(wx) { return MU[wx] || ''; }
+
+// 日辰（占卦当日地支）对一爻的作用：生扶/克伤/比扶、暗动、日破、冲空则实
+function dayEffect(yao, dayZhi) {
+  const dWX = ZHI_WX[ZHI.indexOf(dayZhi)];
+  const e = { sheng: false, ke: false, bi: false, anDong: false, riPo: false, chongKong: false };
+  if (SHENG[dWX] === yao.wx) e.sheng = true;          // 日辰生爻
+  else if (KE[dWX] === yao.wx) e.ke = true;           // 日辰克爻
+  else if (dWX === yao.wx) e.bi = true;               // 日辰比扶（临日建）
+  if (chongZhi(dayZhi) === yao.zhi) {                 // 日辰冲爻
+    if (yao.kong) e.chongKong = true;                 // 旬空逢冲 → 冲空则实
+    else if (!yao.moving) {
+      const yueWang = (yao.wang === '旺' || yao.wang === '相');
+      if (yueWang) e.anDong = true;                    // 旺相静爻被日冲 → 暗动
+      else e.riPo = true;                              // 休囚静爻被日冲 → 日破
+    }
+  }
+  return e;
+}
+
+// 动爻化出之爻（变爻）对原爻（用神）之关系：回头生/克/泄/耗/比
+export function huiTouShen(origWx, bianWx) {
+  if (!bianWx) return '';
+  if (origWx === bianWx) return '比和';
+  if (SHENG[bianWx] === origWx) return '回头生';
+  if (KE[bianWx] === origWx) return '回头克';
+  if (SHENG[origWx] === bianWx) return '回头泄';
+  if (KE[origWx] === bianWx) return '回头耗';
+  return '';
+}
+
+// 反吟：本卦与变卦六爻阴阳全反（如乾之坤、泰之否），主反复颠倒、事多不宁
+function isFanYin(benLines, bianLines) {
+  if (!bianLines) return false;
+  for (let i = 0; i < 6; i++) if (benLines[i] === bianLines[i]) return false;
+  return true;
+}
+
+// 应期法则：综合用神状态给出「何时应验」的多条候选（远应年月、近应日时）
+function yingQi(ysQin, yong, res) {
+  const out = [];
+  const yWX = yong.wx;
+  const dZhi = res.when.day.zhi;
+  // 1) 用神旺相而静 → 待冲动/值日
+  if ((yong.wang === '旺' || yong.wang === '相' || yong.byDay === '比助') && !yong.moving) {
+    out.push('用神得令而静，吉凶事远应年月、近应日时，待冲动或' + yWX + '之当值日/月可应。');
+  }
+  // 2) 与日辰相合 → 合待冲
+  if (yong.heDay) out.push('用神与日辰（' + res.when.day.gz + '）相合，须待冲去合神（' + chongZhi(dZhi) + '）之日月方应。');
+  // 3) 逢日辰冲（静爻）→ 冲待合
+  if (yong.chongDay && !yong.moving) out.push('用神逢日辰冲，须待合去冲神（' + LIUHE[dZhi] + '）之日月方稳。');
+  // 4) 旬空 → 出空
+  if (yong.kong) out.push('用神落旬空（' + res.kong.join('、') + '），须待出空（出旬、填实或冲空之日月）方能应事。');
+  // 5) 月破 → 出月/填实/逢合
+  if (yong.poMonth) out.push('用神逢月破（冲月建之' + yong.zhi + '），目下不成；出月、填实（' + yong.zhi + '值日）或逢合之日可望转圜。');
+  // 6) 休囚无气 → 待生旺
+  if (yong.wang === '休' || yong.wang === '囚' || yong.wang === '死') {
+    out.push('用神休囚无气，须待长生、帝旺或旺相之月日（生扶' + yWX + '之五行当值）方能兴起。');
+  }
+  // 7) 受动爻忌神克 → 制杀之期（制杀 = 能克住忌神之五行）
+  const jiDong = res.ben.yaos.filter(y => y.moving && y.qin !== ysQin && KE[y.wx] === yWX);
+  if (jiDong.length) {
+    const zhiSha = [...new Set(jiDong.map(y => KE_INV[y.wx]))];
+    out.push('用神受动爻忌神（' + jiDong.map(y => y.zhi).join('、') + '）所克，须待"制杀"之期——即能克住忌神的五行（' + zhiSha.join('、') + '）当值之日月方解。');
+  }
+  // 8) 伏藏 → 引拔出现
+  if (yong.fu) out.push('用神伏藏待引拔，须待伏神所临之支值日、或冲去飞神之日，用神方显而应事。');
+  if (!out.length) out.push('用神中和得位，时机多在值日、值月或动爻/变爻所临地支当值之时（"远应年月，近应日时"）。');
+  return out;
+}
+
 // 用神取法（书中次序）：世爻持用 > 动爻用神 > 临日月用神 > 静爻用神 > 伏神
 function pickYongYao(ben, qin) {
   const cands = ben.yaos.filter(y => y.qin === qin);
@@ -407,7 +480,9 @@ export function interpret(question, res) {
     if (yong.bian) {
       const jt = jinTui(yong.zhi, yong.bian.zhi);
       if (jt) lines.push('用神化【' + jt + '】（化出' + yong.bian.zhi + yong.bian.wx + '）：进神主事渐向前成、退神主事退缩消退。');
-      else lines.push('用神化出' + yong.bian.zhi + yong.bian.wx + '（异五行），为回头生/克/泄/耗，须看所化之爻对用神利弊。');
+      const ht = huiTouShen(yong.wx, yong.bian.wx);
+      if (ht && ht !== '比和') lines.push('动爻化出【' + ht + '】（化出' + yong.bian.zhi + yong.bian.wx + '）：回头生则越变越好，回头克则事成而反遭其累，回头泄主付出，回头耗主损耗。');
+      else if (!jt) lines.push('用神化出' + yong.bian.zhi + yong.bian.wx + '（比和），事态平转、无大起落。');
     }
   }
   if (yong.kong) lines.push('用神落旬空（' + res.kong.join('、') + '），暂时不起作用，须待出空（冲空、填实之日）方能应事。');
@@ -438,6 +513,25 @@ export function interpret(question, res) {
     lines.push('卦中无明现忌神克用，外扰较少。');
   }
 
+  // 日辰旺衰（断卦第一提纲）
+  const de = dayEffect(yong, res.when.day.zhi);
+  if (de.bi) lines.push('用神临日辰（' + dayGz + '），如日中天、极旺有力，凡事多可倚仗。');
+  else if (de.sheng) lines.push('日辰（' + dayGz + '）生扶用神，如久旱得雨，化险为夷、事得助力。');
+  else if (de.ke) lines.push('日辰（' + dayGz + '）克伤用神，雪上加霜，须防外力压制。');
+  if (de.anDong) lines.push('用神得日辰冲起为「暗动」——静中生动，事有突发之兆，反得其力。');
+  if (de.riPo) lines.push('用神休囚又被日辰冲破，为「日破」，爻破而无用，谋事难成。');
+  if (de.chongKong) lines.push('用神旬空逢日辰冲起，为「冲空则实」，出空而应、事可发动。');
+
+  // 入墓
+  if (muZhi(yong.wx) && yong.zhi === muZhi(yong.wx)) {
+    lines.push('用神入墓库（' + yong.zhi + '，' + yong.wx + '之墓），事被掩藏，须待冲墓、出墓之日方显其力。');
+  }
+
+  // 反吟
+  if (isFanYin(res.ben.lines, res.bian ? res.bian.lines : null)) {
+    lines.push('本卦变卦六爻阴阳全反，为「反吟」之象，主反复颠倒、事多不宁、进寸退尺。');
+  }
+
   // 日辰月建提纲
   lines.push('提纲：日辰' + dayGz + '（能冲能合、能生能克，断卦第一枢纽）、月建' + monthGz +
     '（司令一月之权）。二者生扶用神则事成，克伤用神则事阻。');
@@ -465,6 +559,9 @@ export function interpret(question, res) {
   else if (tone === '平') concl = '综合看，用神不弱不强，需你付出心力（世生用神主耗），成败在人谋，踏实为之。';
   else concl = '综合看，用神受制、落空破或遭忌神动克，此事阻力较大，宜守不宜进，或待出空、过月、原神得力之时再图。';
   lines.push('【白话总断】' + concl);
+
+  // 应期（何时应验）——算卦先生必给
+  lines.push('【应期推断】' + yingQi(ys.qin, yong, res).join(''));
   return { yong: ys, lines };
 }
 export function fromLines(lines6, movingIdx, when, question) {
